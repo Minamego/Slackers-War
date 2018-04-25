@@ -2,8 +2,8 @@ var socket;
 var x, y, angle = 0, distToOrbit = 55, radSmall = 10, radMid = 50, radBig = 60;
 var bullets = [];
 var scoreElem;
-var maxHealth = 100, rectWidth = 150, rectHeight = 5, distToHealth = 70;
-var maxBullets = 1000, bulletsWidth = 50, bulletsHeight = 10, distToBullets = 90;
+var maxHealth = 50, rectWidth = 150, rectHeight = 5, distToHealth = 70;
+var maxBullets = 100, bulletsWidth = 50, bulletsHeight = 10, distToBullets = 90;
 var winWidth, winHeight;
 var mapHeight = 3000, mapWidth = 3000;
 var smallMapWidth = 200, smallMapHeight = 200;
@@ -26,16 +26,15 @@ function setup() {
   socket.on('newData', play);
 
   // load the images
-  img = loadImage("a1.png"); //todo : make it dependant on player
+  goodImg = loadImage("good.png"); //todo : make it dependant on player
+  badImg = loadImage("bad.png");
   bulletsImg = loadImage("bullets.png");
   bulletImg = loadImage("bullet.png");
   healthImg = loadImage("heart.png");
+
   // load the tracks
   shoutGun = loadSound('gun-gunshot-01.mp3');
   emptyGun = loadSound('emptyGun.mp3');
-  highHealth = loadSound('1.mp3');
-  midhHealth = loadSound('2.mp3');
-  lowhHealth = loadSound('3.mp3');
 
   curState = 2; // high health
   alive = 1;
@@ -106,7 +105,7 @@ function play(data) {
   for (var i = 0; i < siz; i++) {
     drawObject(objects[i], mapPos);
   }
-  drawMap(players, idx);
+  drawMap(players,objects, idx);
 }
 
 function drawPlayer(player, me, mPos) {
@@ -122,7 +121,8 @@ function drawPlayer(player, me, mPos) {
     fill(100, 0, 0);
     curX = drawX, curY = drawY;
     ellipse(curX, curY, 2 * radBig, 2 * radBig);
-    image(img, curX - radMid, curY - radMid, 2 * radMid, 2 * radMid);
+    if(player.state == 1) image(goodImg, curX - radMid, curY - radMid, 2 * radMid, 2 * radMid);
+    else  image(badImg , curX - radMid, curY - radMid, 2 * radMid, 2 * radMid);
     if (me == 1) {
       // move the fire circle around the player
       // this is shown for the owner
@@ -215,19 +215,27 @@ function getPos(x, y) {
 
   return myPos;
 }
-function drawMap(players, me) {
+function drawMap(players,objects, me) {
   fill(150, 100);
   rect(0, winHeight - smallMapHeight, smallMapWidth, smallMapHeight);
   var siz = players.length;
   for (var i = 0; i < siz; i++) {
     if (players[i].health <= 0) continue;
-    if (i == me) {
-      fill(0, 139, 139, 100);
-    }
-    else {
+    if(players[i].state == 0) {
       fill(128, 0, 0, 100);
     }
+    else
+    {
+      fill(0, 139, 139, 100);
+    }
     ellipse(players[i].playerCurX * smallMapWidth / mapWidth, (players[i].playerCurY * smallMapHeight / mapHeight) + (winHeight - smallMapHeight), 10, 10);
+  }
+  var siz = objects.length;
+  for(var i = 0 ; i<siz ; i++)
+  {
+    if(objects[i].type == 0) fill(255,215,0, 100);
+    else fill(46,139,87, 100);
+    ellipse(objects[i].curX * smallMapWidth / mapWidth, (objects[i].curY * smallMapHeight / mapHeight) + (winHeight - smallMapHeight), 5, 5);
   }
 }
 function draw(players) {

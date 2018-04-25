@@ -1,8 +1,8 @@
 var distToMove = 0.1;
-var maxHealth = 100;
+var maxHealth = 50;
 var mapHeight = 3000, mapWidth = 3000, distToOrbit = 55;
 var radBig = 60, radObject = 20;
-var maxBullets = 1000;
+var maxBullets = 100;
 var healthInc = 10, bulletsInc = 5;
 var playerSpeed = 0.01;
 // import express to host the server
@@ -38,7 +38,8 @@ function newConnection(socket) {
         playerCurY: 0,
         health: maxHealth,
         shots: maxBullets,
-        bullets: []
+        bullets: [],
+        state:-1    // neither good nor bad
     }
     players.push(player);
     /* for (var i = 0; i < 10; i++) {
@@ -204,10 +205,11 @@ function check(x, y) {
 // generate random object(health or bullets) in random time
 function genObject() {
     var siz = objects.length;
-    if (siz >= 3) return;
+    if (siz >= 10) return;
     var rnd = getRandomInt(10000);
     if (rnd >= 10) return;
-    var t = getRandomInt(2); // 0 is health and 1 is bullet
+    var t = getRandomInt(10); // 0 is health else is bullet
+    if(t>0) t = 1;
     var x, y;
     var numOfTries = 10;
     for (var i = 0; i < numOfTries; i++) {
