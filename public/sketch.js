@@ -43,7 +43,7 @@ function beforeGame() {
 
       for (var i = 0; i < data['rooms'].length; i++) {
         var room = data['rooms'][i];
-        content.push('<div class="element room"><h3 class="room_name">' + room.name + '</h3> <h6 class="room_good">' + room.good + '</h6><h6 class="room_bad">' + room.bad + '</h6><button type="button" id="good_button">Good</button><button type="button" id="bad_button">Bad</button></div>');
+        content.push('<div class="element room"><h3 class="room_name">' + room.name + '</h3> <h6 class="room_bad">' + room.bad + '</h6><h6 class="room_good">' + room.good + '</h6><button type="button" id="good_button" onclick="goodPlayer(this)">Good</button><button type="button" id="bad_button" onclick="badPlayer(this)">Bad</button></div>');
       }
 
 
@@ -62,33 +62,8 @@ function beforeGame() {
       });
 
 
-      var myrooms = $("#grid div");
-      var good_button = $("#good_button");
-      var bad_button = $("#bad_button");
-      good_button.on("click", function () {
-        var good_num = parseInt(good_button.siblings('.room_good').text());
-        if (good_num >=0) {
-          room_name = good_button.siblings('.room_name').text();
-          var data = {
-            room: room_name,
-            type: 0
-          };
-          prepare(data);
-        }
-      });
-      bad_button.on("click", function () {
-        var good_num = parseInt(bad_button.siblings('.room_good').text());
-        var bad_num = parseInt(bad_button.siblings('.room_bad').text());
-        if (bad_num >=0) {
-          room_name = bad_button.siblings('.room_name').text();
-          var data = {
-            room: room_name,
-            type: 1
 
-          };
-          prepare(data);
-        }
-      });
+
     });
   });
 }
