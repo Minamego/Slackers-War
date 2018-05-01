@@ -43,9 +43,8 @@ function beforeGame() {
 
       for (var i = 0; i < data['rooms'].length; i++) {
         var room = data['rooms'][i];
-        content.push('<div class="element room"><h3 class="room_name">' + room.name + '</h3> <h6 class="room_good">' + room.good + '</h6><h6 class="room_bad">' + room.bad + '</h6><button type="button" id="good_button">Good</button><button type="button" id="bad_button">Bad</button></div>');
+        content.push('<div class="element room"><h3 class="room_name">' + room.name + '</h3> <h6 class="room_good">' + room.good + '</h6><h6 class="room_bad">' + room.bad + '</h6><button type="button" id="good_button" onclick="goodPlayer(this)">Good</button><button type="button" id="bad_button" onclick="badPlayer(this)">Bad</button></div>');
       }
-
 
       $(function () {
         $('#grid').jresponsive({
@@ -62,12 +61,12 @@ function beforeGame() {
       });
 
 
-      var myrooms = $("#grid div");
+     /* var myrooms = $("#grid div");
       var good_button = $("#good_button");
       var bad_button = $("#bad_button");
       good_button.on("click", function () {
         var good_num = parseInt(good_button.siblings('.room_good').text());
-        if (good_num >=0) {
+        if (good_num >= 0) {
           room_name = good_button.siblings('.room_name').text();
           var data = {
             room: room_name,
@@ -79,7 +78,7 @@ function beforeGame() {
       bad_button.on("click", function () {
         var good_num = parseInt(bad_button.siblings('.room_good').text());
         var bad_num = parseInt(bad_button.siblings('.room_bad').text());
-        if (bad_num >=0) {
+        if (bad_num >= 0) {
           room_name = bad_button.siblings('.room_name').text();
           var data = {
             room: room_name,
@@ -88,225 +87,248 @@ function beforeGame() {
           };
           prepare(data);
         }
-      });
+      });*/
+
+      function goodPlayer(dom){
+        var  good_num = dom.parentNode.getElementsByClassName("room_good")[0].innerHTML;
+        if(good_num>0){
+          var  room_name = dom.parentNode.getElementsByClassName("room_name")[0].innerHTML;
+          var data ={
+            room : room_name,
+            type : 0
+          };
+          prepare(data);
+        }
+      }
+      function badPlayer(dom){
+        var  bad_num = dom.parentNode.getElementsByClassName("room_bad")[0].innerHTML;
+        if(bad_num>0){
+          var  room_name = dom.parentNode.getElementsByClassName("room_name")[0].innerHTML;
+          var data ={
+            room : room_name,
+            type : 1
+          };
+          prepare(data);
+        }
+      }
     });
   });
 }
 function prepare(data) {
-        createCanvas(windowWidth, windowHeight);
-        winWidth = windowWidth, winHeight = windowHeight;
-        background(0);
+  createCanvas(windowWidth, windowHeight);
+  winWidth = windowWidth, winHeight = windowHeight;
+  background(0);
 
-        // create connection with the server through client socket
-        socket = io.connect();
+  // create connection with the server through client socket
+  socket = io.connect();
 
-        // set the function to handle the server comming data
-        socket.on('newData', play);
-        socket.emit('room', data);
-        $("#grid").remove();
+  // set the function to handle the server comming data
+  socket.on('newData', play);
+  socket.emit('room', data);
+  $("#grid").remove();
 
-        alive = 1;
-        hasShots = 1;
-      }
+  alive = 1;
+  hasShots = 1;
+}
 
 function mouseMoved() {
-        if (alive == 0) return;
-        // the data that will be send to the server
-        var data = {
-          x: mouseX - myPos.x,
-          y: mouseY - myPos.y
-        }
-        // send the message on the socket to the server
-        socket.emit('moving', data);
-      }
+  if (alive == 0) return;
+  // the data that will be send to the server
+  var data = {
+    x: mouseX - myPos.x,
+    y: mouseY - myPos.y
+  }
+  // send the message on the socket to the server
+  socket.emit('moving', data);
+}
 
 function mouseClicked() {
-        if (alive == 0) return;
-        if (hasShots == 0) {
-          emptyGun.play();
-          return;
-        }
-        // when mouse cliked fire a bullet in the direction of the spinning ball
-        var dx = x - myPos.x;
-        var dy = y - myPos.y;
-        //var d = Math.sqrt(x * x + y * y);
-        //dx /= d, dy /= y;
-        var bullet = { Xnorm: dx, Ynorm: dy, bulletAngle: angle };
-        shoutGun.play();
-        // send the message on the socket to the server
-        socket.emit('shooting', bullet);
-      }
+  if (alive == 0) return;
+  if (hasShots == 0) {
+    emptyGun.play();
+    return;
+  }
+  // when mouse cliked fire a bullet in the direction of the spinning ball
+  var dx = x - myPos.x;
+  var dy = y - myPos.y;
+  //var d = Math.sqrt(x * x + y * y);
+  //dx /= d, dy /= y;
+  var bullet = { Xnorm: dx, Ynorm: dy, bulletAngle: angle };
+  shoutGun.play();
+  // send the message on the socket to the server
+  socket.emit('shooting', bullet);
+}
 
 function play(data) {
-        var players = data.playersData;
-        var objects = data.objectsData;
-        var idx;
-        var siz = players.length;
-        for (var i = 0; i < siz; i++) {
-          if (players[i].socketId.localeCompare(socket.id) == 0) { idx = i; break; }
-        }
-        noStroke();
-        background(0);
-        myPos = getPos(players[idx].playerCurX, players[idx].playerCurY);
-        var mapPos = {
-          x: players[idx].playerCurX,
-          y: players[idx].playerCurY
-        };
+  var players = data.playersData;
+  var objects = data.objectsData;
+  var idx;
+  var siz = players.length;
+  for (var i = 0; i < siz; i++) {
+    if (players[i].socketId.localeCompare(socket.id) == 0) { idx = i; break; }
+  }
+  noStroke();
+  background(0);
+  myPos = getPos(players[idx].playerCurX, players[idx].playerCurY);
+  var mapPos = {
+    x: players[idx].playerCurX,
+    y: players[idx].playerCurY
+  };
 
-        if (players[idx].health <= 0) // game over for me
-        {
-          fill(0, 102, 153);
-          textAlign(CENTER, CENTER);
-          textSize(32);
-          text('Game over for you', winWidth / 2, winHeight / 2);
-          alive = 0;
-        }
-        if (players[idx].shots == 0) hasShots = 0;
-        else hasShots = 1;
-        // draw players
-        for (var i = 0; i < siz; i++) {
-          if (idx == i) drawPlayer(players[i], 1, mapPos);
-          else drawPlayer(players[i], 0, mapPos);
-        }
-        // draw objects
-        siz = objects.length;
-        for (var i = 0; i < siz; i++) {
-          drawObject(objects[i], mapPos);
-        }
-        drawMap(players, objects, idx);
-      }
+  if (players[idx].health <= 0) // game over for me
+  {
+    fill(0, 102, 153);
+    textAlign(CENTER, CENTER);
+    textSize(32);
+    text('Game over for you', winWidth / 2, winHeight / 2);
+    alive = 0;
+  }
+  if (players[idx].shots == 0) hasShots = 0;
+  else hasShots = 1;
+  // draw players
+  for (var i = 0; i < siz; i++) {
+    if (idx == i) drawPlayer(players[i], 1, mapPos);
+    else drawPlayer(players[i], 0, mapPos);
+  }
+  // draw objects
+  siz = objects.length;
+  for (var i = 0; i < siz; i++) {
+    drawObject(objects[i], mapPos);
+  }
+  drawMap(players, objects, idx);
+}
 
 function drawPlayer(player, me, mPos) {
-        if (player.health <= 0) return;
-        var curX = player.playerCurX;
-        var curY = player.playerCurY;
-        var dx = curX - mPos.x;
-        var dy = curY - mPos.y;
-        var drawX = myPos.x + dx;
-        var drawY = myPos.y + dy;
-        if (drawX + radBig >= 0 && drawX - radBig < winWidth && drawY + radBig >= 0 && drawY - radBig < winHeight) {
-          // draw the player
-          fill(100, 0, 0);
-          curX = drawX, curY = drawY;
-          ellipse(curX, curY, 2 * radBig, 2 * radBig);
-          if (player.type == 0) image(goodImg, curX - radMid, curY - radMid, 2 * radMid, 2 * radMid);
-          else image(badImg, curX - radMid, curY - radMid, 2 * radMid, 2 * radMid);
-          if (me == 1) {
-            // move the fire circle around the player
-            // this is shown for the owner
-            x = curX + Math.cos(angle * Math.PI / 180) * distToOrbit;
-            y = curY + Math.sin(angle * Math.PI / 180) * distToOrbit;
-            angle += 0.4;
-            if (angle == 360) angle = 0;
-            fill(100, 100, 0);
-            ellipse(x, y, radSmall, radSmall);
-          }
-          // draw health bar
+  if (player.health <= 0) return;
+  var curX = player.playerCurX;
+  var curY = player.playerCurY;
+  var dx = curX - mPos.x;
+  var dy = curY - mPos.y;
+  var drawX = myPos.x + dx;
+  var drawY = myPos.y + dy;
+  if (drawX + radBig >= 0 && drawX - radBig < winWidth && drawY + radBig >= 0 && drawY - radBig < winHeight) {
+    // draw the player
+    fill(100, 0, 0);
+    curX = drawX, curY = drawY;
+    ellipse(curX, curY, 2 * radBig, 2 * radBig);
+    if (player.type == 0) image(goodImg, curX - radMid, curY - radMid, 2 * radMid, 2 * radMid);
+    else image(badImg, curX - radMid, curY - radMid, 2 * radMid, 2 * radMid);
+    if (me == 1) {
+      // move the fire circle around the player
+      // this is shown for the owner
+      x = curX + Math.cos(angle * Math.PI / 180) * distToOrbit;
+      y = curY + Math.sin(angle * Math.PI / 180) * distToOrbit;
+      angle += 0.4;
+      if (angle == 360) angle = 0;
+      fill(100, 100, 0);
+      ellipse(x, y, radSmall, radSmall);
+    }
+    // draw health bar
 
-          // Change color
-          if (player.health < maxHealth / 4) {
-            fill(255, 0, 0);
-            curState = 0;
-          }
-          else if (player.health < maxHealth / 2) {
-            fill(255, 200, 0);
+    // Change color
+    if (player.health < maxHealth / 4) {
+      fill(255, 0, 0);
+      curState = 0;
+    }
+    else if (player.health < maxHealth / 2) {
+      fill(255, 200, 0);
 
-            curState = 1;
-          }
-          else {
-            fill(0, 255, 0);
-            curState = 2;
-          }
-          // Get fraction 0->1 and multiply it by width of bar
-          var drawWidth = (player.health / maxHealth) * rectWidth;
-          rect(curX - rectWidth / 2, curY - distToHealth - rectHeight, drawWidth, rectHeight);
+      curState = 1;
+    }
+    else {
+      fill(0, 255, 0);
+      curState = 2;
+    }
+    // Get fraction 0->1 and multiply it by width of bar
+    var drawWidth = (player.health / maxHealth) * rectWidth;
+    rect(curX - rectWidth / 2, curY - distToHealth - rectHeight, drawWidth, rectHeight);
 
-          // draw the bullets of this player
+    // draw the bullets of this player
 
-          //draw the bullets bar
-          image(bulletsImg, curX - rectWidth / 2, curY - distToBullets, bulletsWidth, bulletsHeight);
-          fill(0, 102, 153);
-          textAlign(RIGHT, TOP);
-          textSize(10);
-          text(player.shots + "/" + maxBullets, curX + rectWidth / 2, curY - distToBullets);
-        }
-        bullets = player.bullets;
-        var num = bullets.length;
-        for (var j = 0; j < num; j++) {
-          var bullet = bullets[j];
-          var curX = bullet.Xcur;
-          var curY = bullet.Ycur;
-          var dx = curX - mPos.x;
-          var dy = curY - mPos.y;
-          var drawX = myPos.x + dx;
-          var drawY = myPos.y + dy;
-          //if (drawX < 0 || drawX >= winWidth || drawY < 0 || drawY >= winHeight) continue;
-          fill(140, 0, 0);
-          ellipse(drawX, drawY, radSmall, radSmall);
-        }
-      }
+    //draw the bullets bar
+    image(bulletsImg, curX - rectWidth / 2, curY - distToBullets, bulletsWidth, bulletsHeight);
+    fill(0, 102, 153);
+    textAlign(RIGHT, TOP);
+    textSize(10);
+    text(player.shots + "/" + maxBullets, curX + rectWidth / 2, curY - distToBullets);
+  }
+  bullets = player.bullets;
+  var num = bullets.length;
+  for (var j = 0; j < num; j++) {
+    var bullet = bullets[j];
+    var curX = bullet.Xcur;
+    var curY = bullet.Ycur;
+    var dx = curX - mPos.x;
+    var dy = curY - mPos.y;
+    var drawX = myPos.x + dx;
+    var drawY = myPos.y + dy;
+    //if (drawX < 0 || drawX >= winWidth || drawY < 0 || drawY >= winHeight) continue;
+    fill(140, 0, 0);
+    ellipse(drawX, drawY, radSmall, radSmall);
+  }
+}
 function drawObject(ob, mPos) {
-        var curX = ob.curX;
-        var curY = ob.curY;
-        var dx = curX - mPos.x;
-        var dy = curY - mPos.y;
-        var drawX = myPos.x + dx;
-        var drawY = myPos.y + dy;
-        if (drawX < 0 || drawX >= winWidth || drawY < 0 || drawY >= winHeight) return;
-        if (ob.type == 0) // health
-        {
-          fill(0, 192, 255);
-          image(healthImg, drawX - radSmall, drawY - radSmall, radSmall * 2, radSmall * 2);
-        }
-        else {  //bullets
-          fill(120, 0, 0);
-          ellipse(drawX, drawY, radObject, radObject);
-          image(bulletImg, drawX - radSmall, drawY - radSmall, radSmall * 2, radSmall * 2);
-        }
-      }
+  var curX = ob.curX;
+  var curY = ob.curY;
+  var dx = curX - mPos.x;
+  var dy = curY - mPos.y;
+  var drawX = myPos.x + dx;
+  var drawY = myPos.y + dy;
+  if (drawX < 0 || drawX >= winWidth || drawY < 0 || drawY >= winHeight) return;
+  if (ob.type == 0) // health
+  {
+    fill(0, 192, 255);
+    image(healthImg, drawX - radSmall, drawY - radSmall, radSmall * 2, radSmall * 2);
+  }
+  else {  //bullets
+    fill(120, 0, 0);
+    ellipse(drawX, drawY, radObject, radObject);
+    image(bulletImg, drawX - radSmall, drawY - radSmall, radSmall * 2, radSmall * 2);
+  }
+}
 
 function getPos(x, y) {
-        var myPos = {
-          x: winWidth / 2,
-          y: winHeight / 2
-        };
+  var myPos = {
+    x: winWidth / 2,
+    y: winHeight / 2
+  };
 
-        if (x + winWidth / 2 > mapWidth)
-          myPos.x = winWidth - mapWidth + x;
-        if (x - winWidth / 2 < 0)
-          myPos.x = x;
+  if (x + winWidth / 2 > mapWidth)
+    myPos.x = winWidth - mapWidth + x;
+  if (x - winWidth / 2 < 0)
+    myPos.x = x;
 
-        if (y + winHeight / 2 > mapHeight)
-          myPos.y = winHeight - mapHeight + y;
-        if (y - winHeight / 2 < 0)
-          myPos.y = y;
+  if (y + winHeight / 2 > mapHeight)
+    myPos.y = winHeight - mapHeight + y;
+  if (y - winHeight / 2 < 0)
+    myPos.y = y;
 
-        return myPos;
-      }
+  return myPos;
+}
 function drawMap(players, objects, me) {
-        fill(150, 100);
-        rect(0, winHeight - smallMapHeight, smallMapWidth, smallMapHeight);
-        var siz = players.length;
-        for (var i = 0; i < siz; i++) {
-          if (players[i].health <= 0) continue;
-          if (players[i].type == 0) {
-            fill(128, 0, 0, 100);
-          }
-          else {
-            fill(0, 139, 139, 100);
-          }
-          ellipse(players[i].playerCurX * smallMapWidth / mapWidth, (players[i].playerCurY * smallMapHeight / mapHeight) + (winHeight - smallMapHeight), 10, 10);
-        }
-        var siz = objects.length;
-        for (var i = 0; i < siz; i++) {
-          if (objects[i].type == 0) fill(255, 215, 0, 100);
-          else fill(46, 139, 87, 100);
-          ellipse(objects[i].curX * smallMapWidth / mapWidth, (objects[i].curY * smallMapHeight / mapHeight) + (winHeight - smallMapHeight), 5, 5);
-        }
-      }
+  fill(150, 100);
+  rect(0, winHeight - smallMapHeight, smallMapWidth, smallMapHeight);
+  var siz = players.length;
+  for (var i = 0; i < siz; i++) {
+    if (players[i].health <= 0) continue;
+    if (players[i].type == 0) {
+      fill(128, 0, 0, 100);
+    }
+    else {
+      fill(0, 139, 139, 100);
+    }
+    ellipse(players[i].playerCurX * smallMapWidth / mapWidth, (players[i].playerCurY * smallMapHeight / mapHeight) + (winHeight - smallMapHeight), 10, 10);
+  }
+  var siz = objects.length;
+  for (var i = 0; i < siz; i++) {
+    if (objects[i].type == 0) fill(255, 215, 0, 100);
+    else fill(46, 139, 87, 100);
+    ellipse(objects[i].curX * smallMapWidth / mapWidth, (objects[i].curY * smallMapHeight / mapHeight) + (winHeight - smallMapHeight), 5, 5);
+  }
+}
 function draw(players) {
 
-      }
+}
 
 
 
