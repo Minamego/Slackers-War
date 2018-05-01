@@ -13,256 +13,315 @@ var socket = require('socket.io');
 var app = express();
 // give the host the files that will be shown to clients
 app.use(express.static('public'));
-// set the port for the server
-var server = app.listen(3000);
 // run the socket on the server
-var io = socket(server);
 
-var players = [];
-var objects = [];
+
+// the player class holds all information about a player
+class Player {
+    constructor(data) {
+        this.socketId = data.socketId;
+        if (data.type == 1) {
+            this.playerCurX = 0;
+            this.playerCurY = 0;
+        }
+        else {
+            this.playerCurX = mapWidth - 1;
+            this.playerCurY = mapHeight - 1;
+        }
+        this.health = maxHealth;
+        this.shots = maxBullets;
+        this.bullets = [];
+        this.type = data.type // 0 is good , 1 is bad
+    }
+}
+
+// the room class holds all information about the room and the players inside it
+class Room {
+    constructor(name, num, type) {
+        this.autoIncrementId = 0;
+        this.roomName = name;
+        this.good = num;
+        this.bad = num;
+        this.players = [];
+        this.objects = [];
+        this.type = type;     // type of the room means it's a server made room or a client made room
+    }
+    addPlayer(player) {
+        this.players[this.autoIncrementId] = player;
+        this.autoIncrementId++;
+    }
+    // collesion of bullets and players
+    bulletsToPlayersCollesion() {
+        var siz = this.players.length;
+        for (var i in this.players) {
+            if (this.players[i].health <= 0) continue;
+            var num = this.players[i].bullets.length;
+            for (var j = 0; j < num; j++) {
+                var bullet = this.players[i].bullets[j];
+                var bx = bullet.Xcur;
+                var by = bullet.Ycur;
+                var f = 0;
+                for (var k in this.players) {
+                    if (k == i) continue;
+                    if (this.players[k].health <= 0) continue;
+                    var x = this.players[k].playerCurX, y = this.players[k].playerCurY;
+
+                    if ((x - bx) * (x - bx) + (y - by) * (y - by) <= radBig * radBig) {
+
+                        this.players[k].health--;
+                        f = 1;
+                    }
+                }
+                if (f == 1) {
+                    this.players[i].bullets.splice(j, 1);
+                    j--;
+                    num--;
+                }
+
+            }
+        }
+    }
+
+    // collesion of objects and players
+    objectsToPlayersCollesion() {
+        var siz = this.objects.length;
+        for (var i = 0; i < siz; i++) {
+            var x = this.objects[i].curX;
+            var y = this.objects[i].curY;
+            var t = this.objects[i].type;
+            var f = 0;
+            var sizz = this.players.length;
+            for (var j in this.players) {
+                if (this.players[j].health <= 0) continue;
+                var dist = (this.players[j].playerCurX - x) * (this.players[j].playerCurX - x) + (this.players[j].playerCurY - y) * (this.players[j].playerCurY - y);
+                if (dist <= radBig * radBig)   // this player takes the object
+                {
+                    f = 1;
+                    if (t == 0) // health
+                    {
+                        this.players[j].health = Math.min(maxHealth, this.players[j].health + healthInc);
+                    }
+                    else    // bullets
+                    {
+                        this.players[j].shots = Math.min(maxBullets, this.players[j].shots + bulletsInc);
+                    }
+                }
+            }
+            if (f == 1) {
+                this.objects.splice(i, 1);
+                i--;
+                siz--;
+            }
+        }
+    }
+    // check if object can be put in (x,y)
+    check(x, y) {
+        var siz = this.players.length;
+        for (var i in this.players) {
+            if (this.players[i].health <= 0) continue;
+            var dist = (this.players[i].playerCurX - x) * (this.players[i].playerCurX - x) + (this.players[i].playerCurY - y) * (this.players[i].playerCurY - y);
+            if (dist <= (radBig + radObject) * (radBig + radObject)) return 0;
+        }
+        var siz = this.objects.length;
+        for (var i = 0; i < siz; i++) {
+            var dist = (this.objects[i].CurX - x) * (this.objects[i].CurX - x) + (this.objects[i].CurY - y) * (this.objects[i].CurY - y);
+            if (dist <= (radObject + radObject) * (radObject + radObject)) return 0;
+        }
+        return 1;
+    }
+    // generate random object(health or bullets) in random time
+    genObject() {
+        var siz = this.objects.length;
+        if (siz >= 10) return;
+        var rnd = getRandomInt(10000);
+        if (rnd >= 10) return;
+        var t = getRandomInt(10); // 0 is health else is bullet
+        if (t > 0) t = 1;
+        var x, y;
+        var numOfTries = 10;
+        for (var i = 0; i < numOfTries; i++) {
+            var rndX = Math.random() * mapWidth;
+            var rndY = Math.random() * mapHeight;
+            if (this.check(rndX, rndY)) {
+                x = rndX;
+                y = rndY;
+                break;
+            }
+        }
+        var add = {
+            curX: x,
+            curY: y,
+            type: t
+        }
+        this.objects.push(add);
+    }
+
+    //update bullets postion
+    updateBullets() {
+        var siz = this.players.length;
+        for (var i in this.players) {
+            var num = this.players[i].bullets.length;
+            for (var j = 0; j < num; j++) {
+                var bullet = this.players[i].bullets[j];
+                var bx = bullet.Xcur + bullet.Xnorm * distToMove;
+                var by = bullet.Ycur + bullet.Ynorm * distToMove;
+                if (bx < 0 || bx > mapWidth || by < 0 || by > mapHeight) {
+                    this.players[i].bullets.splice(j, 1);
+                    j--;
+                    num--;
+                }
+                else {
+                    this.players[i].bullets[j].Xcur = bx, this.players[i].bullets[j].Ycur = by;
+                }
+            }
+        }
+    }
+    // send the data to clients side to be drawn
+    send()
+    {
+        var data = {
+            playersData:this.players,
+            objectsData:this.objects
+        }
+        io.to(this.roomName).emit('newData' , data);        
+    }
+}
+
+var rooms = [];
+const maxNumOfRomms = 20;
+const initialRooms = 10;
+const maxNumOfPlayers = 10;
+// set the port for the server
+var server = app.listen(3000, function () {
+    for (let i = 1; i <= initialRooms; i++) {
+        rooms[i] = new Room(i, maxNumOfPlayers, 0);
+    }
+    setIO();
+});
+var io;
+function setIO()
+{
+    io = socket(server);
+    io.sockets.on('connection', newConnection);
+}
 // newConnection is a function that handles a new player connected
-io.sockets.on('connection', newConnection);
-
 function newConnection(socket) {
     // print the id of this client 
     console.log(socket.id + " joined");
     // assign disconnect call back
     socket.on('disconnect', function () {
-        disconnect(socket.id);
+        disconnect(socket);
     });
-
-    // add this player
-    var player = {
-        id: socket.id,
-        playerCurX: 0,
-        playerCurY: 0,
-        health: maxHealth,
-        shots: maxBullets,
-        bullets: [],
-        state:-1    // neither good nor bad
-    }
-    players.push(player);
-    /* for (var i = 0; i < 10; i++) {
-        var player = {
-            id: "-1",
-            playerCurX: Math.random() * mapWidth,
-            playerCurY: Math.random() * mapHeight,
-            health: maxHealth,
-            shots: maxBullets,
-            bullets: []
-        }
-        players.push(player);
-    } */
+    // assign player to the room
+    socket.on('room', function (data) {
+        add(socket, data);
+    });
     // handle a player move
     socket.on('moving', function (data) {
-        move(data, socket.id);
+        move(data, socket);
     });
 
     // handle a player shooting
     socket.on('shooting', function (data) {
-        addBullet(data, socket.id);
+        addBullet(data, socket);
     });
 }
 
-function disconnect(id) {
+function disconnect(socket) {
     // print the id of this client 
-    console.log(id + " left");
-    var siz = players.length;
-    var idx;
-    for (var i = 0; i < siz; i++) {
-        if (players[i].id.localeCompare(id) == 0) { idx = i; break; }
-    }
-    //console.log(players[idx]);
-    players.splice(idx, 1);
+    console.log(socket.id + " left");
+    delete rooms[socket.roomName].players[socket.idx];
+}
+
+// assign a player to a room
+function add(socket, data) {
+    socket.join(data.room, function () {
+        socket.idx = rooms[data.room].autoIncrementId;
+        socket.roomName = data.room;
+        var playerData = {
+            socketId: socket.id,
+            type: data.type
+        }
+        rooms[data.room].addPlayer(new Player(playerData));
+        if (data.type == 0) rooms[data.room].good--;
+        else rooms[data.room].bad--;
+    });
 }
 
 // move specific player on his mouse event
-function move(data, id) {
-
-    var idx;
-    var siz = players.length;
-    for (var i = 0; i < siz; i++) {
-        if (players[i].id.localeCompare(id) == 0) { idx = i; break; }
-    }
-    if (players[idx].health > 0) {
-        data.x = data.x * playerSpeed + players[idx].playerCurX;
-        data.y = data.y * playerSpeed + players[idx].playerCurY;
+function move(data, socket) {
+    var player = rooms[socket.roomName].players[socket.idx];
+    if (player.health > 0) {
+        data.x = data.x * playerSpeed + player.playerCurX;
+        data.y = data.y * playerSpeed + player.playerCurY;
         if (data.x + radBig >= mapWidth) data.x = mapWidth - radBig;
         if (data.x - radBig < 0) data.x = radBig;
         if (data.y + radBig >= mapHeight) data.y = mapHeight - radBig;
         if (data.y - radBig < 0) data.y = radBig;
-        players[idx].playerCurX = data.x;
-        players[idx].playerCurY = data.y;
+        player.playerCurX = data.x;
+        player.playerCurY = data.y;
+        rooms[socket.roomName].players[socket.idx] = player;
+        rooms[socket.roomName].send();
     }
-    send();
 }
 
 // move a bullet to specific player
-function addBullet(data, id) {
-    var idx;
-    var siz = players.length;
-    for (var i = 0; i < siz; i++) {
-        if (players[i].id.localeCompare(id) == 0) { idx = i; break; }
-    }
-    if (players[idx].health > 0) {
+function addBullet(data, socket) {
+    var player = rooms[socket.roomName].players[socket.idx];
+    if (player.health > 0) {
+        if (player.shots <= 0) return;
         var bull = {
             Xnorm: data.Xnorm,
             Ynorm: data.Ynorm,
-            Xcur: players[idx].playerCurX + Math.cos(data.bulletAngle * Math.PI / 180) * distToOrbit,
-            Ycur: players[idx].playerCurY + Math.sin(data.bulletAngle * Math.PI / 180) * distToOrbit
+            Xcur: player.playerCurX + Math.cos(data.bulletAngle * Math.PI / 180) * distToOrbit,
+            Ycur: player.playerCurY + Math.sin(data.bulletAngle * Math.PI / 180) * distToOrbit
         };
-        if (players[idx].shots <= 0) return;
-        players[idx].bullets.push(bull);
-        players[idx].shots--;
-        //console.log(players[idx].bullets);
-    }
-    send();
-}
-
-// collesion of bullets and players
-function bulletsToPlayersCollesion() {
-    var siz = players.length;
-    for (var i = 0; i < siz; i++) {
-        if (players[i].health <= 0) continue;
-        var num = players[i].bullets.length;
-        for (var j = 0; j < num; j++) {
-            var bullet = players[i].bullets[j];
-            var bx = bullet.Xcur;
-            var by = bullet.Ycur;
-            var f = 0;
-            for (var k = 0; k < siz; k++) {
-                if (k == i) continue;
-                if (players[k].health <= 0) continue;
-                var x = players[k].playerCurX, y = players[k].playerCurY;
-
-                if ((x - bx) * (x - bx) + (y - by) * (y - by) <= radBig * radBig) {
-
-                    players[k].health--;
-                    f = 1;
-                }
-            }
-            if (f == 1) {
-                players[i].bullets.splice(j, 1);
-                j--;
-                num--;
-            }
-
-        }
+        rooms[socket.roomName].players[socket.idx].bullets.push(bull);
+        rooms[socket.roomName].players[socket.idx].shots--;
+        rooms[socket.roomName].send();
     }
 }
-
-// collesion of objects and players
-function objectsToPlayersCollesion() {
-    var siz = objects.length;
-    for (var i = 0; i < siz; i++) {
-        var x = objects[i].curX;
-        var y = objects[i].curY;
-        var t = objects[i].type;
-        var f = 0;
-        var sizz = players.length;
-        for (var j = 0; j < sizz; j++) {
-            if (players[j].health <= 0) continue;
-            var dist = (players[j].playerCurX - x) * (players[j].playerCurX - x) + (players[j].playerCurY - y) * (players[j].playerCurY - y);
-            if (dist <= radBig * radBig)   // this player takes the object
-            {
-                f = 1;
-                if (t == 0) // health
-                {
-                    players[j].health = Math.min(maxHealth, players[j].health + healthInc);
-                }
-                else    // bullets
-                {
-                    players[j].shots = Math.min(maxBullets, players[j].shots + bulletsInc);
-                }
-            }
-        }
-        if (f == 1) {
-            objects.splice(i, 1);
-            i--;
-            siz--;
-        }
-    }
-}
-
 function getRandomInt(max) {
     return Math.floor(Math.random() * Math.floor(max));
 }
-// check if object can be put in (x,y)
-function check(x, y) {
-    var siz = players.length;
-    for (var i = 0; i < siz; i++) {
-        if (players[i].health <= 0) continue;
-        var dist = (players[i].playerCurX - x) * (players[i].playerCurX - x) + (players[i].playerCurY - y) * (players[i].playerCurY - y);
-        if (dist <= (radBig + radObject) * (radBig + radObject)) return 0;
-    }
-    var siz = objects.length;
-    for (var i = 0; i < siz; i++) {
-        var dist = (objects[i].CurX - x) * (objects[i].CurX - x) + (objects[i].CurY - y) * (objects[i].CurY - y);
-        if (dist <= (radObject + radObject) * (radObject + radObject)) return 0;
-    }
-    return 1;
-}
-// generate random object(health or bullets) in random time
-function genObject() {
-    var siz = objects.length;
-    if (siz >= 10) return;
-    var rnd = getRandomInt(10000);
-    if (rnd >= 10) return;
-    var t = getRandomInt(10); // 0 is health else is bullet
-    if(t>0) t = 1;
-    var x, y;
-    var numOfTries = 10;
-    for (var i = 0; i < numOfTries; i++) {
-        var rndX = Math.random() * mapWidth;
-        var rndY = Math.random() * mapHeight;
-        if (check(rndX, rndY)) {
-            x = rndX;
-            y = rndY;
-            break;
-        }
-    }
-    var add = {
-        curX: x,
-        curY: y,
-        type: t
-    }
-    objects.push(add);
-}
+
 // the game logic
 setInterval(play, 20);
 function play() {
-    var idx;
-    var siz = players.length;
-    //check collesions
-    objectsToPlayersCollesion();
-    bulletsToPlayersCollesion();
-    //move bullets
-    for (var i = 0; i < siz; i++) {
-        var num = players[i].bullets.length;
-        for (var j = 0; j < num; j++) {
-            var bullet = players[i].bullets[j];
-            var bx = bullet.Xcur + bullet.Xnorm * distToMove;
-            var by = bullet.Ycur + bullet.Ynorm * distToMove;
-            if (bx < 0 || bx > mapWidth || by < 0 || by > mapHeight) {
-                players[i].bullets.splice(j, 1);
-                j--;
-                num--;
-            }
-            else {
-                players[i].bullets[j].Xcur = bx, players[i].bullets[j].Ycur = by;
-            }
-        }
+    var siz = rooms.length;
+    for(var i = 1 ; i<siz ; i++)
+    {
+        rooms[i].updateBullets();
+        rooms[i].objectsToPlayersCollesion();
+        rooms[i].bulletsToPlayersCollesion();
+        rooms[i].genObject();
+        rooms[i].send();
     }
-    genObject();
-    send();
 }
 
-// send the data to clients side to be drawn
-function send() {
-    var data = {
-        playersData: players,
-        objectsData: objects
+app.get('/rooms',function(req,response){
+    
+    response.writeHead(200, {"Content-Type": "application/json"});
+    var temp =[];
+    for (let key in rooms) {
+      let val = rooms[key];
+      if(val.good>0 || val.bad>0){
+      var data = {
+        name : val.roomName,
+        good : val.good,
+        bad : val.bad
+      }
+      temp.push(data);
     }
-    io.sockets.emit('newData', data);
-}
+   }
+    var json = JSON.stringify({ 
+      rooms : temp
+    });
+    response.end(json);
+    
+  });
+  app.get('/', function(req, res){
+  });
+  
+
 
