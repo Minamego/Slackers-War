@@ -15,6 +15,44 @@
   <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
   <link rel="stylesheet" href="gridagram.css">
   <script type="text/javascript" src="jresponsive1.js"></script>
+
+  <script>
+  
+    function goodPlayer(dom){
+          var good_num = dom.parentNode.getElementsByClassName("room_good")[0].innerHTML;
+          if(good_num>0){
+            var  room_name = dom.parentNode.getElementsByClassName("room_name")[0].innerHTML;
+            var data ={
+              room : room_name,
+              type : 0
+            };
+            prepare(data);
+          }
+        }
+        function badPlayer(dom){
+          var bad_num = dom.parentNode.getElementsByClassName("room_bad")[0].innerHTML;
+          if(bad_num>0){
+            var  room_name = dom.parentNode.getElementsByClassName("room_name")[0].innerHTML;
+            var data ={
+              room : room_name,
+              type : 1
+            };
+            prepare(data);
+          }
+        }
+    
+    
+    
+    </script>
+
+
+
+
+
+
+
+
+
 </head>
 
 <body>

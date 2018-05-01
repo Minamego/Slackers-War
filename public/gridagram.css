@@ -122,12 +122,12 @@ a:active, a:active code {
 .element .room_good {
     bottom: 0;
     font-size: 1.3em;
-    left: 0;
+    right: 0;
 }
 .element .room_bad {
     bottom: 0;
     font-size: 1.3em;
-    right: 0;
+    left: 0;
 }
 .element .weight {
     bottom: 0.5em;
