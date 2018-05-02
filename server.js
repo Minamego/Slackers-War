@@ -1,6 +1,6 @@
 var distToMove = 0.1;
 var maxHealth = 50;
-var mapHeight = 3000, mapWidth = 3000, distToOrbit = 55;
+var mapHeight = 2000, mapWidth = 2000, distToOrbit = 55;
 var radBig = 60, radObject = 20;
 var maxBullets = 100;
 var healthInc = 10, bulletsInc = 5;
@@ -14,8 +14,6 @@ var app = express();
 // give the host the files that will be shown to clients
 app.use(express.static('public'));
 // run the socket on the server
-
-
 // the player class holds all information about a player
 class Player {
     constructor(data) {
@@ -32,28 +30,43 @@ class Player {
         this.shots = maxBullets;
         this.bullets = [];
         this.type = data.type // 0 is good , 1 is bad
+        this.dir = {
+            dx: 0,
+            dy: 0
+        }
+    }
+    // move specific player on his mouse event
+    move() {
+        if (this.health > 0) {
+            this.playerCurX = this.dir.dx * playerSpeed + this.playerCurX;
+            this.playerCurY = this.dir.dy * playerSpeed + this.playerCurY;
+            if (this.playerCurX + radBig >= mapWidth) this.playerCurX = mapWidth - radBig;
+            if (this.playerCurX - radBig < 0) this.playerCurX = radBig;
+            if (this.playerCurY + radBig >= mapHeight) this.playerCurY = mapHeight - radBig;
+            if (this.playerCurY - radBig < 0) this.playerCurY = radBig;
+        }
     }
 }
 
 // the room class holds all information about the room and the players inside it
 class Room {
-    constructor(name, num, type) {
+    constructor(name, num, state) {
         this.autoIncrementId = 0;
         this.roomName = name;
         this.good = num;
         this.bad = num;
+        this.initialNum = num;
         this.players = [];
         this.objects = [];
-        this.type = type;     // type of the room means it's a server made room or a client made room
+        this.state = state; // 0 means not in game , 1 means in  game
     }
     addPlayer(player) {
         this.players[this.autoIncrementId] = player;
         this.autoIncrementId++;
     }
     getPos(socketId) {
-        for(var i in this.players)
-        {
-            if(this.players[i].socketId.localeCompare(socketId)==0) return i;
+        for (var i in this.players) {
+            if (this.players[i].socketId.localeCompare(socketId) == 0) return i;
         }
     }
     // collesion of bullets and players
@@ -129,7 +142,7 @@ class Room {
             if (dist <= (radBig + radObject) * (radBig + radObject)) return 0;
         }
         var siz = this.objects.length;
-        for (var i in this.objects ) {
+        for (var i in this.objects) {
             var dist = (this.objects[i].CurX - x) * (this.objects[i].CurX - x) + (this.objects[i].CurY - y) * (this.objects[i].CurY - y);
             if (dist <= (radObject + radObject) * (radObject + radObject)) return 0;
         }
@@ -143,18 +156,18 @@ class Room {
         if (rnd >= 10) return;
         var t = getRandomInt(10); // 0 is health else is bullet
         if (t > 0) t = 1;
-        var x =  Math.random() * mapWidth;
-        var y =  Math.random() * mapHeight;
-       /* var numOfTries = 10;
-        for (var i = 0; i < numOfTries; i++) {
-            var rndX = Math.random() * mapWidth;
-            var rndY = Math.random() * mapHeight;
-            if (this.check(rndX, rndY)) {
-                x = rndX;
-                y = rndY;
-                break;
-            }
-        }*/
+        var x = Math.random() * mapWidth;
+        var y = Math.random() * mapHeight;
+        /* var numOfTries = 10;
+         for (var i = 0; i < numOfTries; i++) {
+             var rndX = Math.random() * mapWidth;
+             var rndY = Math.random() * mapHeight;
+             if (this.check(rndX, rndY)) {
+                 x = rndX;
+                 y = rndY;
+                 break;
+             }
+         }*/
         var add = {
             curX: x,
             curY: y,
@@ -168,7 +181,7 @@ class Room {
         var siz = this.players.length;
         for (var i in this.players) {
             var num = this.players[i].bullets.length;
-            for (var j in this.players[i].bullets ) {
+            for (var j in this.players[i].bullets) {
                 var bullet = this.players[i].bullets[j];
                 var bx = bullet.Xcur + bullet.Xnorm * distToMove;
                 var by = bullet.Ycur + bullet.Ynorm * distToMove;
@@ -183,14 +196,26 @@ class Room {
             }
         }
     }
-    // send the data to clients side to be drawn
-    send()
+    movePlayers()
     {
-        var data = {
-            playersData:this.players,
-            objectsData:this.objects
+        for(var i in this.players)
+        {
+            this.players[i].move();
         }
-        io.to(this.roomName).emit('newData' , data);        
+    }
+    // send the data to clients side to be drawn
+    send() {
+        var data = {
+            playersData: this.players,
+            objectsData: this.objects
+        }
+        io.to(this.roomName).emit('newData', data);
+    }
+    startGame() {
+        this.state = 1;
+        this.good = this.initialNum;
+        this.bad = this.initialNum;
+        io.to(this.roomName).emit('gameStarted', data);
     }
 }
 
@@ -200,14 +225,14 @@ const initialRooms = 10;
 const maxNumOfPlayers = 10;
 // set the port for the server
 var server = app.listen(3000, function () {
-    for (let i = 1; i <= initialRooms; i++) {
-        rooms[i] = new Room(i, maxNumOfPlayers, 0);
+    for (let i = 1; i <= maxNumOfPlayers; i++) {
+        if (i <= initialRooms) rooms[i] = new Room(i, maxNumOfPlayers, 0);
+        else rooms[i] = new Room(i, maxNumOfPlayers, -1);
     }
     setIO();
 });
 var io;
-function setIO()
-{
+function setIO() {
     io = socket(server);
     io.sockets.on('connection', newConnection);
 }
@@ -225,21 +250,35 @@ function newConnection(socket) {
     });
     // handle a player move
     socket.on('moving', function (data) {
-        move(data, socket);
+        changeDir(data, socket);
     });
-
     // handle a player shooting
     socket.on('shooting', function (data) {
         addBullet(data, socket);
     });
 }
+function changeDir(data, socket) {
+    var idx = rooms[socket.roomName].getPos(socket.id);
+    var player = rooms[socket.roomName].players[idx];
+    if (player.health > 0) {
+        player.dir.dx = data.x;
+        player.dir.dy = data.y;
+        rooms[socket.roomName].players[idx] = player;
+        rooms[socket.roomName].players[idx].move();
+        rooms[socket.roomName].send();
+    }
 
+}
 function disconnect(socket) {
     // print the id of this client 
     console.log(socket.id + " left");
     var idx = rooms[socket.roomName].getPos(socket.id);
-    rooms[socket.roomName].players.splice(idx , 1);
-    console.log(rooms[socket.roomName].players);
+    if (rooms[socket.roomName].state == 0) {
+        if (rooms[socket.roomName].players[idx].type == 0) rooms[socket.roomName].good++;
+        else rooms[socket.roomName].bad++;
+    }
+    rooms[socket.roomName].players.splice(idx, 1);
+    rooms[socket.roomName].autoIncrementId--;
 }
 
 // assign a player to a room
@@ -253,28 +292,11 @@ function add(socket, data) {
         rooms[data.room].addPlayer(new Player(playerData));
         if (data.type == 0) rooms[data.room].good--;
         else rooms[data.room].bad--;
+        if (rooms[data.room].bad == 0 && rooms[data.room].good == 0) {
+            rooms[data.room].startGame();
+        }
     });
 }
-
-// move specific player on his mouse event
-function move(data, socket) {
-    var idx = rooms[socket.roomName].getPos(socket.id);
-    var player = rooms[socket.roomName].players[idx];
-    if (player.health > 0) {
-        data.x = data.x * playerSpeed + player.playerCurX;
-        data.y = data.y * playerSpeed + player.playerCurY;
-        if (data.x + radBig >= mapWidth) data.x = mapWidth - radBig;
-        if (data.x - radBig < 0) data.x = radBig;
-        if (data.y + radBig >= mapHeight) data.y = mapHeight - radBig;
-        if (data.y - radBig < 0) data.y = radBig;
-        player.playerCurX = data.x;
-        player.playerCurY = data.y;
-        var idx = rooms[socket.roomName].getPos(socket.id);
-        rooms[socket.roomName].players[idx] = player;
-       //2. rooms[socket.roomName].send();
-    }
-}
-
 // move a bullet to specific player
 function addBullet(data, socket) {
     var idx = rooms[socket.roomName].getPos(socket.id);
@@ -287,7 +309,6 @@ function addBullet(data, socket) {
             Xcur: player.playerCurX + Math.cos(data.bulletAngle * Math.PI / 180) * distToOrbit,
             Ycur: player.playerCurY + Math.sin(data.bulletAngle * Math.PI / 180) * distToOrbit
         };
-        var idx = rooms[socket.roomName].getPos(socket.id);
         rooms[socket.roomName].players[idx].bullets.push(bull);
         rooms[socket.roomName].players[idx].shots--;
         rooms[socket.roomName].send();
@@ -301,8 +322,8 @@ function getRandomInt(max) {
 setInterval(play, 20);
 function play() {
     var siz = rooms.length;
-    for(var i in rooms)
-    {
+    for (var i in rooms) {
+        rooms[i].movePlayers();
         rooms[i].updateBullets();
         rooms[i].objectsToPlayersCollesion();
         rooms[i].bulletsToPlayersCollesion();
@@ -311,29 +332,53 @@ function play() {
     }
 }
 
-app.get('/rooms',function(req,response){
-    
-    response.writeHead(200, {"Content-Type": "application/json"});
-    var temp =[];
+app.get('/rooms', function (req, response) {
+
+    response.writeHead(200, { "Content-Type": "application/json" });
+    var temp = [];
     for (let key in rooms) {
-      let val = rooms[key];
-      if(val.good>0 || val.bad>0){
-      var data = {
-        name : val.roomName,
-        good : val.good,
-        bad : val.bad
-      }
-      temp.push(data);
+        let val = rooms[key];
+        if (val.state == 0) {
+            var data = {
+                name: val.roomName,
+                good: val.good,
+                bad: val.bad
+            }
+            temp.push(data);
+        }
     }
-   }
-    var json = JSON.stringify({ 
-      rooms : temp
+    var json = JSON.stringify({
+        rooms: temp
     });
     response.end(json);
-    
-  });
-  app.get('/', function(req, res){
-  });
-  
 
+});
+app.get('/create_room', function (req, response) {
+    // validate that this user can create a room
 
+    // check that the numbers of created rooms below the limit
+    var idx = -1;
+    for (var i in rooms) {
+        if (rooms[i].state == -1) { idx = i; break; }
+    }
+    if (idx != -1) {
+        rooms[idx].state = 0;
+    }
+    response.writeHead(200, { "Content-Type": "application/json" });
+    var temp = [];
+    for (let key in rooms) {
+        let val = rooms[key];
+        if (val.state == 0) {
+            var data = {
+                name: val.roomName,
+                good: val.good,
+                bad: val.bad
+            }
+            temp.push(data);
+        }
+    }
+    var json = JSON.stringify({
+        rooms: temp
+    });
+    response.end(json);
+});

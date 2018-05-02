@@ -5,7 +5,7 @@ var scoreElem;
 var maxHealth = 50, rectWidth = 150, rectHeight = 5, distToHealth = 70;
 var maxBullets = 100, bulletsWidth = 50, bulletsHeight = 10, distToBullets = 90;
 var winWidth, winHeight;
-var mapHeight = 3000, mapWidth = 3000;
+var mapHeight = 2000, mapWidth = 2000;
 var smallMapWidth = 200, smallMapHeight = 200;
 var curState;
 var alive, hasShots;
@@ -24,6 +24,8 @@ function setup() {
   bulletsImg = loadImage("bullets.png");
   bulletImg = loadImage("bullet.png");
   healthImg = loadImage("heart.png");
+  backgroundImg = loadImage("background.jpg");
+  preMouseData = createVector(0, 0);
 
   // load the tracks
   shoutGun = loadSound('gun-gunshot-01.mp3');
@@ -64,7 +66,7 @@ function beforeGame() {
 function prepare(data) {
   createCanvas(windowWidth, windowHeight);
   winWidth = windowWidth, winHeight = windowHeight;
-  background(0);
+  background(backgroundImg);
 
   // create connection with the server through client socket
   socket = io.connect();
@@ -77,17 +79,18 @@ function prepare(data) {
   alive = 1;
   hasShots = 1;
 }
-
+/*
+setInterval(checkMovement, 20);
 function mouseMoved() {
   if (alive == 0) return;
-  // the data that will be send to the server
-  var data = {
-    x: mouseX - myPos.x,
-    y: mouseY - myPos.y
-  }
-  // send the message on the socket to the server
-  socket.emit('moving', data);
+  checkMovement();
 }
+
+function checkMovement() {
+
+}*/
+
+
 
 function mouseClicked() {
   if (alive == 0) return;
@@ -273,7 +276,24 @@ function drawMap(players, objects, me) {
     ellipse(objects[i].curX * smallMapWidth / mapWidth, (objects[i].curY * smallMapHeight / mapHeight) + (winHeight - smallMapHeight), 5, 5);
   }
 }
-function draw(players) {
+function draw() {
+  if (alive == 0) return;
+  // the data that will be send to the server
+  var x = mouseX - myPos.x;
+  var y = mouseY - myPos.y;
+  if (x * x + y * y <= radBig * radBig)   // send the message to stop player
+  {
+    x = 0, y = 0;
+  }
+  var v = createVector(x, y);
+  if (v.x != 0 || v.y != 0) v.normalize();
+  if (Math.abs(preMouseData.x - x) <= 1e-6 && Math.abs(preMouseData.y - y) <= 1e-6) return;
+  preMouseData = v;
+  var data = {
+    x: x,
+    y: y
+  }
+  socket.emit('moving', data);
 
 }
 
