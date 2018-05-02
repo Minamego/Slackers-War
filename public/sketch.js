@@ -37,11 +37,10 @@ function beforeGame() {
     $(".container").remove();
     // request to get the rooms
     $.getJSON('/rooms', function (data) {
-      alert("success");
 
       $('body').append('<div id="grid"></div>');
 
-      for (var i = 0; i < data['rooms'].length; i++) {
+      for (var i in data['rooms']) {
         var room = data['rooms'][i];
         content.push('<div class="element room"><h3 class="room_name">' + room.name + '</h3> <h6 class="room_bad">' + room.bad + '</h6><h6 class="room_good">' + room.good + '</h6><button type="button" id="good_button" onclick="goodPlayer(this)">Good</button><button type="button" id="bad_button" onclick="badPlayer(this)">Bad</button></div>');
       }
@@ -116,7 +115,7 @@ function play(data) {
   var objects = data.objectsData;
   var idx;
   var siz = players.length;
-  for (var i = 0; i < siz; i++) {
+  for (var i in players) {
     if (players[i].socketId.localeCompare(socket.id) == 0) { idx = i; break; }
   }
   noStroke();
@@ -138,13 +137,13 @@ function play(data) {
   if (players[idx].shots == 0) hasShots = 0;
   else hasShots = 1;
   // draw players
-  for (var i = 0; i < siz; i++) {
+  for (var i in players) {
     if (idx == i) drawPlayer(players[i], 1, mapPos);
     else drawPlayer(players[i], 0, mapPos);
   }
   // draw objects
   siz = objects.length;
-  for (var i = 0; i < siz; i++) {
+  for (var i in objects) {
     drawObject(objects[i], mapPos);
   }
   drawMap(players, objects, idx);
@@ -206,7 +205,7 @@ function drawPlayer(player, me, mPos) {
   }
   bullets = player.bullets;
   var num = bullets.length;
-  for (var j = 0; j < num; j++) {
+  for (var j in bullets) {
     var bullet = bullets[j];
     var curX = bullet.Xcur;
     var curY = bullet.Ycur;
@@ -261,7 +260,7 @@ function drawMap(players, objects, me) {
   fill(150, 100);
   rect(0, winHeight - smallMapHeight, smallMapWidth, smallMapHeight);
   var siz = players.length;
-  for (var i = 0; i < siz; i++) {
+  for (var i in players) {
     if (players[i].health <= 0) continue;
     if (players[i].type == 0) {
       fill(128, 0, 0, 100);

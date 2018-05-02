@@ -56,7 +56,7 @@ class Room {
         for (var i in this.players) {
             if (this.players[i].health <= 0) continue;
             var num = this.players[i].bullets.length;
-            for (var j = 0; j < num; j++) {
+            for (var j in this.players[i].bullets) {
                 var bullet = this.players[i].bullets[j];
                 var bx = bullet.Xcur;
                 var by = bullet.Ycur;
@@ -85,7 +85,7 @@ class Room {
     // collesion of objects and players
     objectsToPlayersCollesion() {
         var siz = this.objects.length;
-        for (var i = 0; i < siz; i++) {
+        for (var i in this.objects) {
             var x = this.objects[i].curX;
             var y = this.objects[i].curY;
             var t = this.objects[i].type;
@@ -123,7 +123,7 @@ class Room {
             if (dist <= (radBig + radObject) * (radBig + radObject)) return 0;
         }
         var siz = this.objects.length;
-        for (var i = 0; i < siz; i++) {
+        for (var i in this.objects ) {
             var dist = (this.objects[i].CurX - x) * (this.objects[i].CurX - x) + (this.objects[i].CurY - y) * (this.objects[i].CurY - y);
             if (dist <= (radObject + radObject) * (radObject + radObject)) return 0;
         }
@@ -161,7 +161,7 @@ class Room {
         var siz = this.players.length;
         for (var i in this.players) {
             var num = this.players[i].bullets.length;
-            for (var j = 0; j < num; j++) {
+            for (var j in this.players[i].bullets ) {
                 var bullet = this.players[i].bullets[j];
                 var bx = bullet.Xcur + bullet.Xnorm * distToMove;
                 var by = bullet.Ycur + bullet.Ynorm * distToMove;
@@ -250,6 +250,7 @@ function add(socket, data) {
 
 // move specific player on his mouse event
 function move(data, socket) {
+    if(socket.roomName)
     var player = rooms[socket.roomName].players[socket.idx];
     if (player.health > 0) {
         data.x = data.x * playerSpeed + player.playerCurX;
@@ -289,7 +290,7 @@ function getRandomInt(max) {
 setInterval(play, 20);
 function play() {
     var siz = rooms.length;
-    for(var i = 1 ; i<siz ; i++)
+    for(var i in rooms)
     {
         rooms[i].updateBullets();
         rooms[i].objectsToPlayersCollesion();
