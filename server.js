@@ -50,6 +50,12 @@ class Room {
         this.players[this.autoIncrementId] = player;
         this.autoIncrementId++;
     }
+    getPos(socketId) {
+        for(var i in this.players)
+        {
+            if(this.players[i].socketId.localeCompare(socketId)==0) return i;
+        }
+    }
     // collesion of bullets and players
     bulletsToPlayersCollesion() {
         var siz = this.players.length;
@@ -137,8 +143,9 @@ class Room {
         if (rnd >= 10) return;
         var t = getRandomInt(10); // 0 is health else is bullet
         if (t > 0) t = 1;
-        var x, y;
-        var numOfTries = 10;
+        var x =  Math.random() * mapWidth;
+        var y =  Math.random() * mapHeight;
+       /* var numOfTries = 10;
         for (var i = 0; i < numOfTries; i++) {
             var rndX = Math.random() * mapWidth;
             var rndY = Math.random() * mapHeight;
@@ -147,7 +154,7 @@ class Room {
                 y = rndY;
                 break;
             }
-        }
+        }*/
         var add = {
             curX: x,
             curY: y,
@@ -230,13 +237,14 @@ function newConnection(socket) {
 function disconnect(socket) {
     // print the id of this client 
     console.log(socket.id + " left");
-    delete rooms[socket.roomName].players[socket.idx];
+    var idx = rooms[socket.roomName].getPos(socket.id);
+    rooms[socket.roomName].players.splice(idx , 1);
+    console.log(rooms[socket.roomName].players);
 }
 
 // assign a player to a room
 function add(socket, data) {
     socket.join(data.room, function () {
-        socket.idx = rooms[data.room].autoIncrementId;
         socket.roomName = data.room;
         var playerData = {
             socketId: socket.id,
@@ -250,8 +258,8 @@ function add(socket, data) {
 
 // move specific player on his mouse event
 function move(data, socket) {
-    if(socket.roomName)
-    var player = rooms[socket.roomName].players[socket.idx];
+    var idx = rooms[socket.roomName].getPos(socket.id);
+    var player = rooms[socket.roomName].players[idx];
     if (player.health > 0) {
         data.x = data.x * playerSpeed + player.playerCurX;
         data.y = data.y * playerSpeed + player.playerCurY;
@@ -261,14 +269,16 @@ function move(data, socket) {
         if (data.y - radBig < 0) data.y = radBig;
         player.playerCurX = data.x;
         player.playerCurY = data.y;
-        rooms[socket.roomName].players[socket.idx] = player;
-        rooms[socket.roomName].send();
+        var idx = rooms[socket.roomName].getPos(socket.id);
+        rooms[socket.roomName].players[idx] = player;
+       //2. rooms[socket.roomName].send();
     }
 }
 
 // move a bullet to specific player
 function addBullet(data, socket) {
-    var player = rooms[socket.roomName].players[socket.idx];
+    var idx = rooms[socket.roomName].getPos(socket.id);
+    var player = rooms[socket.roomName].players[idx];
     if (player.health > 0) {
         if (player.shots <= 0) return;
         var bull = {
@@ -277,8 +287,9 @@ function addBullet(data, socket) {
             Xcur: player.playerCurX + Math.cos(data.bulletAngle * Math.PI / 180) * distToOrbit,
             Ycur: player.playerCurY + Math.sin(data.bulletAngle * Math.PI / 180) * distToOrbit
         };
-        rooms[socket.roomName].players[socket.idx].bullets.push(bull);
-        rooms[socket.roomName].players[socket.idx].shots--;
+        var idx = rooms[socket.roomName].getPos(socket.id);
+        rooms[socket.roomName].players[idx].bullets.push(bull);
+        rooms[socket.roomName].players[idx].shots--;
         rooms[socket.roomName].send();
     }
 }
