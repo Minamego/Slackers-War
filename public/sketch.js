@@ -143,9 +143,10 @@ function prepare(data) {
   socket.on('newData', play);
   socket.emit('room', data);
   $(".world").remove();
-
-  alive = 1;
-  hasShots = 1;
+  fill(0, 102, 153);
+  textAlign(CENTER, CENTER);
+  textSize(32);
+  text('Waiting the room to complete', winWidth / 2, winHeight / 2);
 }
 /*
 setInterval(checkMovement, 20);
@@ -201,6 +202,7 @@ function play(data) {
     text('Game over for you', winWidth / 2, winHeight / 2);
     alive = 0;
   }
+  else alive = 1;
   if (players[idx].shots == 0) hasShots = 0;
   else hasShots = 1;
   // draw players

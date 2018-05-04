@@ -224,14 +224,13 @@ class Room {
         this.state = 1;
         this.good = this.initialNum;
         this.bad = this.initialNum;
-        io.to(this.roomName).emit('gameStarted', data);
     }
 }
 
 var rooms = [];
 const maxNumOfRomms = 20;
 const initialRooms = 10;
-const maxNumOfPlayers = 10;
+const maxNumOfPlayers = 5;
 // set the port for the server
 var server = app.listen(3000, function () {
     for (let i = 1; i <= maxNumOfPlayers; i++) {
@@ -332,12 +331,14 @@ setInterval(play, 20);
 function play() {
     var siz = rooms.length;
     for (var i in rooms) {
-        rooms[i].movePlayers();
-        rooms[i].updateBullets();
-        rooms[i].objectsToPlayersCollesion();
-        rooms[i].bulletsToPlayersCollesion();
-        rooms[i].genObject();
-        rooms[i].send();
+        if (rooms[i].state == 1) {
+            rooms[i].movePlayers();
+            rooms[i].updateBullets();
+            rooms[i].objectsToPlayersCollesion();
+            rooms[i].bulletsToPlayersCollesion();
+            rooms[i].genObject();
+            rooms[i].send();
+        }
     }
 }
 
@@ -484,8 +485,8 @@ app.post('/buy_ghost', function (req, res) {
                 coins: users[SID].coins,
                 features: users[SID].features
             }
-        } , function(err , res){
-            if(err) throw err;
+        }, function (err, res) {
+            if (err) throw err;
         });
 
         res.send({
