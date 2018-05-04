@@ -5,6 +5,8 @@ var radBig = 60, radObject = 20;
 var maxBullets = 100;
 var healthInc = 10, bulletsInc = 5;
 var playerSpeed = 0.01;
+var ghostPrice = 0, shotsPrice = 0;
+var minimumPointsToOpenRoom = 1000;
 // import express to host the server
 var express = require('express');
 // import the socket to control in and out on serever
@@ -15,6 +17,15 @@ var app = express();
 app.use(express.static('public'));
 // run the socket on the server
 // the player class holds all information about a player
+class user {
+    constructor(username, points, coins, features) {
+        this.username = username;
+        this.points = points;
+        this.coins = coins;
+        this.features = features;
+    }
+}
+var users = [];
 class Player {
     constructor(data) {
         this.socketId = data.socketId;
@@ -330,65 +341,16 @@ function play() {
     }
 }
 
-app.get('/rooms', function (req, response) {
-
-    response.writeHead(200, { "Content-Type": "application/json" });
-    var temp = [];
-    for (let key in rooms) {
-        let val = rooms[key];
-        if (val.state == 0) {
-            var data = {
-                name: val.roomName,
-                good: val.good,
-                bad: val.bad
-            }
-            temp.push(data);
-        }
-    }
-    var json = JSON.stringify({
-        rooms: temp
-    });
-    response.end(json);
-
-});
-app.get('/create_room', function (req, response) {
-    // validate that this user can create a room
-
-    // check that the numbers of created rooms below the limit
-    var idx = -1;
-    for (var i in rooms) {
-        if (rooms[i].state == -1) { idx = i; break; }
-    }
-    if (idx != -1) {
-        rooms[idx].state = 0;
-    }
-    response.writeHead(200, { "Content-Type": "application/json" });
-    var temp = [];
-    for (let key in rooms) {
-        let val = rooms[key];
-        if (val.state == 0) {
-            var data = {
-                name: val.roomName,
-                good: val.good,
-                bad: val.bad
-            }
-            temp.push(data);
-        }
-    }
-    var json = JSON.stringify({
-        rooms: temp
-    });
-    response.end(json);
-});
-
-
 var session = require('express-session');
 var bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const userSchema = new Schema({
     username: String,
-    password: String
+    password: String,
+    points: Number,
+    coins: Number,
+    features: Array
 });
 
 const User = mongoose.model('user', userSchema);
@@ -400,7 +362,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(session({
     secret: 'work hard',
     resave: true,
-    saveUninitialized: false
+    saveUninitialized: true
 }));
 
 mongoose.connect('mongodb://localhost/slackers');
@@ -411,6 +373,43 @@ mongoose.connection.once('open', function () {
     console.log('Connection error:', error);
 });
 
+var zerosArr = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+app.get('/rooms', function (req, response) {
+    var SID = req.sessionID;
+    if (users[SID] == null) {
+        users[SID] = new user("", 0, 0, zerosArr);
+    }
+    var features = users[SID].features;
+    response.writeHead(200, { "Content-Type": "application/json" });
+    var temp = [];
+    for (let key in rooms) {
+        let val = rooms[key];
+        if (val.state == 0) {
+            var curFeature = 3;
+            if (users[SID].username) curFeature = features[key];
+            var data = {
+                name: val.roomName,
+                good: val.good,
+                bad: val.bad,
+                feature: curFeature
+            }
+            temp.push(data);
+        }
+    }
+    var userType = 1;
+    if (users[SID].username) {
+        userType = 0;
+    }
+    var json = JSON.stringify({
+        rooms: temp,
+        type: userType,
+        username: users[SID].username,
+        points: users[SID].points,
+        coins: users[SID].coins
+    });
+    response.end(json);
+
+});
 
 app.get('/', function (req, res) {
 
@@ -418,23 +417,18 @@ app.get('/', function (req, res) {
 
 });
 
-/*
-app.post('/login', function (req, res) {
-  req.session.username = (req.session.username ? req.session.username : req.body.username);
-  res.json({status: 0});
-});
-*/
 app.post('/login', function (req, res) {
 
     if (req.sessionID) {
-        //console.log("post function login");
-
+        var SID = req.sessionID;
+        //console.log("get function login");
         User.findOne({ username: req.body.username }).then(function (result) {
             if (result.username == req.body.username && result.password == req.body.password) {
-
+                users[SID] = new user(result.username, result.points, result.coins, zerosArr);
                 res.send({
                     username: req.body.username,
-                    password: req.body.password
+                    coins: users[req.sessionID].coins,
+                    points: users[req.sessionID].points
                 });
             } else {
                 res.send({ errorMsg: 'invalid username or password' });
@@ -447,13 +441,14 @@ app.post('/login', function (req, res) {
 
 app.post('/register', function (req, res) {
     if (req.sessionID) {
-        console.log("post function");
         const user = new User({
             username: req.body.username,
-            password: req.body.password
+            password: req.body.password,
+            points: 0,
+            coins: 0,
+            features: zerosArr
         });
 
-        console.log(user);
 
         User.findOne({ username: req.body.username }).then(function (result) {
             if (result != null && result.username == req.body.username) {
@@ -472,4 +467,111 @@ app.post('/register', function (req, res) {
     } else {
         console.log("req.session is false");
     }
+});
+
+app.post('/buy_ghost', function (req, res) {
+    if (req.sessionID && users[req.sessionID] && users[req.sessionID].coins >= ghostPrice) {
+
+        var SID = req.sessionID;
+        var roomName = req.body.room;
+
+        users[SID].coins -= ghostPrice;
+        users[SID].features[roomName] |= 1;
+        console.log(users[SID].features);
+        console.log(users[SID].username);
+        User.updateOne({ username: users[SID].username }, {
+            $set: {
+                coins: users[SID].coins,
+                features: users[SID].features
+            }
+        } , function(err , res){
+            if(err) throw err;
+        });
+
+        res.send({
+            sucess: 1,
+            coins: users[SID].coins,
+            points: users[SID].points
+        });
+
+    } else {
+        if (users[SID] == null) {
+            users[SID] = new user("", 0, 0, zerosArr);
+        }
+        res.send({
+            sucess: 0,
+            coins: users[SID].coins,
+            points: users[SID].points
+        });
+    }
+});
+app.post('/buy_shots', function (req, res) {
+    if (req.sessionID && users[req.sessionID] && users[req.sessionID].coins > ghostPrice) {
+        var SID = req.sessionID;
+        var roomName = req.body.room;
+
+        users[SID].coins -= ghostPrice;
+        users[SID].features[roomName] |= 1;
+        console.log(users[SID].features);
+        User.updateOne({ username: users[SID].username }, {
+            $set: {
+                coins: users[SID].coins,
+                features: users[SID].features
+            }
+        });
+
+        res.send({
+            sucess: 1,
+            coins: users[SID].coins,
+            points: users[SID].points
+        });
+
+    } else {
+        if (users[SID] == null) {
+            users[SID] = new user("", 0, 0, zerosArr);
+        }
+        res.send({
+            sucess: 0,
+            coins: users[SID].coins,
+            points: users[SID].points
+        });
+    }
+});
+
+app.post('/create_room', function (req, response) {
+    User.findOne({ username: req.body.username }).then(function (result) {
+        // validate that this user can create a room
+        if (result && result.points >= minimumPointsToOpenRoom) {
+            // check that the numbers of created rooms below the limit
+            var idx = -1;
+            for (var i in rooms) {
+                if (rooms[i].state == -1) { idx = i; break; }
+            }
+            if (idx != -1) {
+                rooms[idx].state = 0;
+            }
+        }
+        var features = users[SID].features;
+        response.writeHead(200, { "Content-Type": "application/json" });
+        var temp = [];
+        for (let key in rooms) {
+            let val = rooms[key];
+            if (val.state == 0) {
+                var curFeature = features[key];
+                var data = {
+                    name: val.roomName,
+                    good: val.good,
+                    bad: val.bad,
+                    feature: curFeature
+                }
+                temp.push(data);
+            }
+        }
+        var json = JSON.stringify({
+            rooms: temp,
+            type: 0
+        });;
+        response.end(json);
+    });
+
 });

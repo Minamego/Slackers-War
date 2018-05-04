@@ -7,23 +7,37 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Slackers War</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    canvas {
+      border: 0px none black;
+    }
+  </style>
+
   <script src="lib/p5.min.js"></script>
   <script src="lib/addons/p5.dom.min.js"></script>
   <script src="lib/addons/p5.sound.min.js"></script>
   <script src="socket.io/socket.io.js"></script>
   <script src="sketch.js"></script>
   <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
-  <link rel="stylesheet" href="gridagram.css">
-  <link rel="stylesheet" href="index.css">
+  <script src="bootstrap.min.js"></script>
+  <link rel="stylesheet" href="bootstrap.css">
   <link rel="stylesheet" href="room.css">
-  <script type=" text/javascript " src="jresponsive1.js "></script>
-
+  <link rel="stylesheet" href="index.css">
   <script>
 
     function goodPlayer(dom) {
-      var good_num = dom.parentNode.getElementsByClassName("room_good ")[0].innerHTML;
+
+      var container = $(dom).parents('.item');
+      var good_num = container.find(".room_good").text();
+      console.log("good: " + good_num);
       if (good_num > 0) {
-        var room_name = dom.parentNode.getElementsByClassName("room_name ")[0].innerHTML;
+        var room_name = container.find(".room_name").text();
+        console.log(room_name);
         var data = {
           room: room_name,
           type: 0
@@ -32,9 +46,10 @@
       }
     }
     function badPlayer(dom) {
-      var bad_num = dom.parentNode.getElementsByClassName("room_bad ")[0].innerHTML;
+      var container = $(dom).parents('.item');
+      var bad_num = container.find(".room_bad").text();
       if (bad_num > 0) {
-        var room_name = dom.parentNode.getElementsByClassName("room_name ")[0].innerHTML;
+        var room_name = container.find(".room_name").text();
         var data = {
           room: room_name,
           type: 1
@@ -43,10 +58,126 @@
       }
     }
 
+    function becomeGhost(dom,cnt) {
+      //handler for ghoooooooooooost feature
+      var container = $(dom).parents('.item');
+      var room_name = container.find(".room_name").text();
+      console.log(room_name);
+      $.ajax({
+        url: 'http://localhost:3000/buy_ghost',
+        // dataType: "jsonp",
+
+        data: {
+          room: room_name
+        }
+        , type: 'POST',
+        success: function (data) {
+          console.log(data);
+          if (data.success == 1) {
+            $('#coins_text').text(data.coins);
+            $('#points_text').text(data.points);
+            //dom.css("disabled" , "true");
+            //dom.setAttribute("class", "btn btn-default");
+            // dom.setAttribute("disabled", "true");
+            //dom.disabled =true;
+           
+            $("#ghost_button"+cnt).prop("disabled",true);
+          }
+        },
+        error: function (error) {
+          var ret = jQuery.parseJSON(error);
+          console.log(ret);
+        },
+      });
+    }
+
+    function extraShoots(dom) {
+      //handler for extrashotssssssss feature
+      var container = $(dom).parents('.item');
+      var room_name = container.find(".room_name").text();
+      $.ajax({
+        url: 'http://localhost:3000/buy_shots',
+        // dataType: "jsonp",
+
+        data: {
+          room: room_name
+
+        }
+        , type: 'POST',
+        success: function (data) {
+          console.log(data);
+          if (data.success == 1) {
+            $('#coins_text').text(data.coins);
+            $('#points_text').text(data.points);
+            //dom.css("disabled" , "true");
+            //dom.setAttribute("class", "btn btn-default");
+            // dom.setAttribute("disabled", "true");
+            //dom.style.disabled = "true";
+            dom.disabled = true;
+          }
+        },
+        error: function (error) {
+          var ret = jQuery.parseJSON(error);
+          console.log(ret);
+        },
+      });
+    }
+
+    function requestToCreateRoom(dom) {
+      // handler for requesting creation of a new rooooooooooooom
+      /* console.log("i'm hereeeeee");
+       $(".profile").append('<p id="minimumcostlabel">Minimum Cost: </p> <input type="text" name="minimumcost"> <button type"button" id="createnewroomactually">Create</button>');
+       */
+      var container = $(dom).parents('.item');
+      var room_name = container.find(".room_name").text();
+      $.ajax({
+        url: 'http://localhost:3000/create_room',
+        // dataType: "jsonp",
+
+        data: {
+          minimum_points: 0
+
+        }
+        , type: 'POST',
+        success: function (data) {
+          console.log(data);
+          // 0 ydaso 
+          // 1 eshtra ghost
+          // 2 eshtra extra
+          //3 eshtra el etnen
+          $("#grid").remove();
+          $(".world").append('<div class="grid"></div>');
+          for (var i in data['rooms']) {
+            var room = data['rooms'][i];
+            //type 0 login
+            $(".grid").append('<div class="item"><h3 class="room_name">' + room.name + '</h3> <div class="grid-container3"> <span id="happy_span">Happy</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: 40%">      <h6 class="room_bad">' + room.bad + '</h6>         </div>      </div></div>  <div class="grid-container4"> <span id="sad_span">Sad</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: 40%">     <h6 class="room_good">' + room.good + '</h6> </div></div> </div><div class="grid-container2"><button type="button" id="good_button" class="btn btn-default" onclick="goodPlayer(this)">Happy</button><button type="button" id="bad_button" class="btn btn-default" onclick="badPlayer(this)">Sad</button></div><div class="grid-container1"><button type="button" id="ghost_button" class="btn btn-primary" onclick="becomeGhost(this)">Ghost</button><button type="button" id="extrashots_button" class="btn btn-success" onclick="extraShoots(this)">Extra Shots</button></div></div>');
+
+            if (room.feature == 1) {
+              $("#ghost_button").attr("disabled", true);
+              $("#ghost_button").toggleClass("btn btn-default");
+            } else if (room.feature == 2) {
+              $("#extrashots_button").attr("disabled", true);
+              $("#extrashots_button").toggleClass("btn btn-default");
+            }
+            else if (room.feature == 3) {
+              $("#ghost_button").attr("disabled", true);
+              $("#extrashots_button").attr("disabled", true);
+              $("#ghost_button").toggleClass("btn btn-default");
+              $("#extrashots_button").toggleClass("btn btn-default");
+            }
 
 
+          }
+
+        },
+        error: function (error) {
+          var ret = jQuery.parseJSON(error);
+          console.log(ret);
+        },
+      });
+
+    }
   </script>
-
 </head>
 
 <body>

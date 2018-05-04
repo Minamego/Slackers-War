@@ -14,6 +14,7 @@ var myPos = {
   x: winWidth / 2,
   y: winHeight / 2
 }
+var maxSystemRoomsNumber = 10;
 function setup() {
   // before user joins a room
   beforeGame();
@@ -33,7 +34,6 @@ function setup() {
 
 }
 function beforeGame() {
-  var content = [];
   alive = 0;
 
   $('.message a').click(function () {
@@ -53,9 +53,9 @@ function beforeGame() {
         if (data.errorMsg != null) {
           alert(data.errorMsg);
         } else {
-          alert('Welcome : ' + data.username + ' your password is : ' + data.password);
-
+         // alert('Welcome : ' + data.username);
           // redirect to rooms
+          viewRooms();
         }
       },
       error: function (error) {
@@ -79,7 +79,7 @@ function beforeGame() {
         if (data.errorMsg != null) {
           alert(data.errorMsg);
         } else {
-          alert('Welcome : ' + data.username + ' your password is : ' + data.password + ' , msg : ' + data.msg);
+         // alert('Welcome : ' + data.username  + ' , msg : ' + data.msg);
           window.location.replace("http://localhost:3000");
         }
       },
@@ -90,33 +90,47 @@ function beforeGame() {
     });
   });
   $("#guest-button").click(function () {
-    $(".login-page").remove();
-    // request to get the rooms
-    $.getJSON('/rooms', function (data) {
-
-      $('body').append('<div id="grid"></div>');
-
-      for (var i in data['rooms']) {
-        var room = data['rooms'][i];
-        content.push('<div class="element room"><h3 class="room_name">' + room.name + '</h3> <h6 class="room_bad">' + room.bad + '</h6><h6 class="room_good">' + room.good + '</h6><button type="button" id="good_button" onclick="goodPlayer(this)">Good</button><button type="button" id="bad_button" onclick="badPlayer(this)">Bad</button></div>');
-      }
-
-      $(function () {
-        $('#grid').jresponsive({
-          min_size: 50,
-          max_size: 200,
-          hspace: 50,
-          vspace: 10,
-          height: 200,
-          class_name: 'element',
-          content_array: content,
-          transfromation: 'animate'
-        });
-
-      });
-    });
+    viewRooms();
   });
 }
+function viewRooms()
+{
+  $(".login-page").remove();
+    // request to get the rooms
+    $.getJSON('/rooms', function (data) {
+      console.log(data);
+      $('body').append('<div class="world"></div>');
+      $("#defaultCanvas0").remove();
+      $(".world").append('<div class="grid"></div>');
+      $(".world").append('<div class="profile"></div>');
+      $(".grid").append('<div class="work"><p id="availablerooms">Available Rooms</p></div>');
+      if(data.type==0){
+      $(".profile").append('<div class="work2"<p id="profile_label_div">Profile</p><div>');
+      $(".profile").append('<span id="username_label">UserName: </span> <p id="username_text">'+data.username+'</p> <span id="coins_label">Coins: </span><p id="coins_text">'+data.coins+'</p><span id="points_label">Points: </span><p id="points_text">Points: '+data.points+'</p>');
+      $(".profile").append('<div id="wrapper_create_new_room"> <input id="minimumcost_input" type="text" class="form-control" placeholder="Minimum cost for entering the room" aria-describedby="basic-addon2"> <button type="button" id="createnewroom" class="btn btn-info" onclick="requestToCreateRoom(this)">Create New Room</button></div>');
+      }
+      var cnt=0;
+      for (var i in data['rooms']) {
+        ++cnt;
+        var room = data['rooms'][i];
+        //type 0 login
+        if(data.type==0){
+        $(".grid").append('<div class="item"><h3 class="room_name">' + room.name + '</h3> <div class="grid-container3"> <span id="happy_span">Happy</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: 40%">      <h6 class="room_bad">' + room.bad + '</h6>         </div>      </div></div>  <div class="grid-container4"> <span id="sad_span">Sad</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: 40%">     <h6 class="room_good">' + room.good + '</h6> </div></div> </div><div class="grid-container2"><button type="button" id="good_button" class="btn btn-default" onclick="goodPlayer(this)">Happy</button><button type="button" id="bad_button" class="btn btn-default" onclick="badPlayer(this)">Sad</button></div><div class="grid-container1"><button type="button" id="ghost_button'+cnt+'" class="btn btn-primary" onclick="becomeGhost(this,cnt)">Ghost</button><button type="button" id="extrashots_button" class="btn btn-success" onclick="extraShoots('+this+')">Extra Shots</button></div></div>');
+        }
+        else if(data.type==1&&room.name<=maxSystemRoomsNumber){
+          $(".grid").append('<div class="item"><h3 class="room_name">' + room.name + '</h3> <div class="grid-container3"> <span id="happy_span">Happy</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: 40%">      <h6 class="room_bad">' + room.bad + '</h6>         </div>      </div></div>  <div class="grid-container4"> <span id="sad_span">Sad</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: 40%">     <h6 class="room_good">' + room.good + '</h6> </div></div> </div><div class="grid-container2"><button type="button" id="good_button" class="btn btn-default" onclick="goodPlayer(this)">Happy</button><button type="button" id="bad_button" class="btn btn-default" onclick="badPlayer(this)">Sad</button></div><div class="grid-container1"><button type="button" id="ghost_button'+cnt+'" disabled="true" class="btn btn-primary" onclick="becomeGhost(this,cnt)">Ghost</button><button type="button" id="extrashots_button" disabled="true" class="btn btn-success" onclick="extraShoots('+this+')">Extra Shots</button></div></div>');
+        } 
+        /*if(data.type==1){
+          $("#ghost_button").attr("disabled", true); $("#extrashots_button").attr("disabled", true);
+          $("#ghost_button").toggleClass("btn btn-default");
+          $("#extrashots_button").toggleClass("btn btn-default");
+         }
+         */   
+        
+      }
+    });
+}
+
 function prepare(data) {
   createCanvas(windowWidth, windowHeight);
   winWidth = windowWidth, winHeight = windowHeight;
@@ -128,7 +142,7 @@ function prepare(data) {
   // set the function to handle the server comming data
   socket.on('newData', play);
   socket.emit('room', data);
-  $("#grid").remove();
+  $(".world").remove();
 
   alive = 1;
   hasShots = 1;
