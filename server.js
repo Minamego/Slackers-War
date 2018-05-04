@@ -196,10 +196,8 @@ class Room {
             }
         }
     }
-    movePlayers()
-    {
-        for(var i in this.players)
-        {
+    movePlayers() {
+        for (var i in this.players) {
             this.players[i].move();
         }
     }
@@ -381,4 +379,97 @@ app.get('/create_room', function (req, response) {
         rooms: temp
     });
     response.end(json);
+});
+
+
+var session = require('express-session');
+var bodyParser = require('body-parser');
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+const userSchema = new Schema({
+    username: String,
+    password: String
+});
+
+const User = mongoose.model('user', userSchema);
+
+
+var urlencodedParser = bodyParser.urlencoded({ extended: false });
+app.use(bodyParser.urlencoded({ extended: true }));
+
+app.use(session({
+    secret: 'work hard',
+    resave: true,
+    saveUninitialized: false
+}));
+
+mongoose.connect('mongodb://localhost/slackers');
+mongoose.connection.once('open', function () {
+    console.log('Connection has been made, now make fireworks...');
+
+}).on('error', function (error) {
+    console.log('Connection error:', error);
+});
+
+
+app.get('/', function (req, res) {
+
+    console.log("hello");
+
+});
+
+/*
+app.post('/login', function (req, res) {
+  req.session.username = (req.session.username ? req.session.username : req.body.username);
+  res.json({status: 0});
+});
+*/
+app.post('/login', function (req, res) {
+
+    if (req.sessionID) {
+        //console.log("post function login");
+
+        User.findOne({ username: req.body.username }).then(function (result) {
+            if (result.username == req.body.username && result.password == req.body.password) {
+
+                res.send({
+                    username: req.body.username,
+                    password: req.body.password
+                });
+            } else {
+                res.send({ errorMsg: 'invalid username or password' });
+            }
+        });
+    } else {
+        console.log("req.session is false");
+    }
+});
+
+app.post('/register', function (req, res) {
+    if (req.sessionID) {
+        console.log("post function");
+        const user = new User({
+            username: req.body.username,
+            password: req.body.password
+        });
+
+        console.log(user);
+
+        User.findOne({ username: req.body.username }).then(function (result) {
+            if (result != null && result.username == req.body.username) {
+                res.send({ errorMsg: 'username is already taken' });
+            } else {
+                user.save().then(function () {
+                    res.send({
+                        username: req.body.username,
+                        password: req.body.password,
+                        msg: 'registeration success'
+                    });
+                });
+            }
+        });
+
+    } else {
+        console.log("req.session is false");
+    }
 });

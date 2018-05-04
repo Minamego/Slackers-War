@@ -1,0 +1,158 @@
+
+#grid { 
+	width: 700px;
+	height: 700px;
+}
+
+.widget { 
+    color: #3fa867;
+    background: rgb(239, 239, 239);
+    width: 250px;
+    display: inline-block;
+    vertical-align:top;
+    padding: 5px;
+    margin: 5px;
+    overflow: auto;
+}
+
+.widget .title { 
+	font-weight: bold;
+	text-align: center;
+	margin: 5px;
+}
+
+.widget .body { 
+    margin: 5px;
+   background-color: #a83f56
+}
+
+html, body, div, span, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, abbr, address, cite, code, del, dfn, em, img, ins, kbd, q, samp, small, strong, sub, sup, var, b, i, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td, article, aside, canvas, details, figcaption, figure, footer, header, hgroup, menu, nav, section, summary, time, mark, audio, video {
+    border: 0 none;
+    margin: 0;
+    padding: 0;
+    vertical-align: baseline;
+    font-family: 'Helvetica Neue',Arial,sans-serif;
+}
+article, aside, details, figcaption, figure, footer, header, hgroup, menu, nav, section {
+    display: block;
+}
+body {
+    background: none repeat scroll 0 0 black;
+    color: #FFFFFF;
+    font-family: 'Lucida Sans','Lucida Sans Regular','Lucida Grande','Lucida Sans Unicode',Arial,sans-serif;
+    font-size: 13px;
+    width:100%;
+    height:100%;
+    line-height: 1.7em;
+}
+h1, h2, h3, p, ul, ol, pre, dl {
+    margin-bottom: 1em;
+}
+h1, h2, h3 {
+    font-weight: bold;
+}
+h1 {
+    font-size: 32px;
+    line-height: 1.1em;
+}
+h2 {
+    font-size: 24px;
+    line-height: 1.1em;
+}
+ul, ol {
+    margin-left: 1.5em;
+}
+a, a code {
+    color: #FFBB44;
+    text-decoration: none;
+}
+a:hover, a:hover code {
+    color: #44BBFF;
+}
+a:active, a:active code {
+    background: none repeat scroll 0 0 black;
+    color: #11FFBB;
+}	
+#grid {
+    bottom: 0;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: hidden;	
+    overflow: auto;
+    top: 5px;
+    position:relative;
+    margin:0 auto;
+    width: 60%;	
+}
+.element{
+    position:absolute;	
+}
+.element {
+    background: none repeat scroll 0 0 #000000;
+    border-top-right-radius: 1.2em;
+    color: #222222;
+    float: left;
+    height: 98%;	
+    width: 98%;
+    margin-top: 5%;
+}	
+.element * {
+    margin: 0;
+    position: absolute;
+}
+.element .number {
+    color: rgba(0, 0, 0, 0.5);
+    font-size: 2.25em;
+    font-weight: bold;
+    right: 0.5em;
+    top: 0.5em;
+}	
+.element .room_name {
+    color: #FFFFFF;
+    font-size: 4vw;
+    left: 0.2em;
+    line-height: 1em;
+    top: 0.4em;
+}
+.element .name {
+    bottom: 1.7em;
+    font-size: 1.1em;
+    left: 0.5em;
+}
+.element .room_good {
+    bottom: 0;
+    font-size: 1.3em;
+    left: 0;
+}
+.element .room_bad {
+    bottom: 0;
+    font-size: 1.3em;
+    right: 0;
+}
+.element .weight {
+    bottom: 0.5em;
+    font-size: 0.9em;
+    left: 0.5em;
+}
+.element:hover {
+    cursor: pointer;
+}
+.element:hover h3{
+    text-shadow: 0 0 10px white, 0 0 10px white;
+}
+.element:hover h2 {
+    color: white;
+}
+.element.room {
+    background: none repeat scroll 0 0 rgb(255, 81, 0);
+    width: 100%;
+    height: 100%;
+}
+#good_button{
+   
+    right: 50px;
+}
+#chitikaAdBlock-0, #chitikaAdBlock-1, #chitikaAdBlock-2, #chitikaAdBlock-3 {
+    margin-left: 23%;
+    margin-right: 23%;
+}

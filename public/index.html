@@ -4,8 +4,8 @@
 <head>
   <meta name="viewport" width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0>
   <meta charset="UTF-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Slackers War</title>
   <script src="lib/p5.min.js"></script>
   <script src="lib/addons/p5.dom.min.js"></script>
@@ -14,53 +14,73 @@
   <script src="sketch.js"></script>
   <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
   <link rel="stylesheet" href="gridagram.css">
-  <script type="text/javascript" src="jresponsive1.js"></script>
+  <link rel="stylesheet" href="index.css">
+  <link rel="stylesheet" href="room.css">
+  <script type=" text/javascript " src="jresponsive1.js "></script>
 
   <script>
-  
-    function goodPlayer(dom){
-          var good_num = dom.parentNode.getElementsByClassName("room_good")[0].innerHTML;
-          if(good_num>0){
-            var  room_name = dom.parentNode.getElementsByClassName("room_name")[0].innerHTML;
-            var data ={
-              room : room_name,
-              type : 0
-            };
-            prepare(data);
-          }
-        }
-        function badPlayer(dom){
-          var bad_num = dom.parentNode.getElementsByClassName("room_bad")[0].innerHTML;
-          if(bad_num>0){
-            var  room_name = dom.parentNode.getElementsByClassName("room_name")[0].innerHTML;
-            var data ={
-              room : room_name,
-              type : 1
-            };
-            prepare(data);
-          }
-        }
-    
-    
-    
-    </script>
+
+    function goodPlayer(dom) {
+      var good_num = dom.parentNode.getElementsByClassName("room_good ")[0].innerHTML;
+      if (good_num > 0) {
+        var room_name = dom.parentNode.getElementsByClassName("room_name ")[0].innerHTML;
+        var data = {
+          room: room_name,
+          type: 0
+        };
+        prepare(data);
+      }
+    }
+    function badPlayer(dom) {
+      var bad_num = dom.parentNode.getElementsByClassName("room_bad ")[0].innerHTML;
+      if (bad_num > 0) {
+        var room_name = dom.parentNode.getElementsByClassName("room_name ")[0].innerHTML;
+        var data = {
+          room: room_name,
+          type: 1
+        };
+        prepare(data);
+      }
+    }
 
 
 
-
-
-
-
-
+  </script>
 
 </head>
 
 <body>
-  <div class="container">
-    <button id="login">Login</button>
-    <button id="guest">Play as a guest!</button>
+  <div class="login-page">
+
+    <div class="form">
+      <div class="login-register">
+        <div>
+          <h1 style="color: white; font-size: 50px;">Slackers</h1>
+        </div>
+        <input id="login-uname" name="username" type="text" placeholder="username" required/>
+        <input id="login-pwd" name="password" type="password" placeholder="password" required/>
+        <button id="login-button">Login</button>
+      </div>
+      <div class="login-register">
+        <button id="guest-button">Play as a guest</button>
+        <p class="message">Not Registed?
+          <a href="#">Register</a>
+        </p>
+      </div>
+      <div id="register-form" class="login-register">
+        <div>
+          <h1 style="color: white; font-size: 50px;">Slackers</h1>
+        </div>
+        <input id="uname" name="username" type="text" placeholder="username" required/>
+        <input id="pwd" name="password" type="text" placeholder="password" required/>
+        <button id="create-button">CREATE ACCOUNT</button>
+        <p class="message">Already Registed?
+          <a href="#">Login</a>
+        </p>
+      </div>
+    </div>
   </div>
-  
+
 </body>
 
 </html>

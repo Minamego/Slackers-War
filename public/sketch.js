@@ -35,8 +35,62 @@ function setup() {
 function beforeGame() {
   var content = [];
   alive = 0;
-  $("#guest").click(function () {
-    $(".container").remove();
+
+  $('.message a').click(function () {
+    $('.login-register').animate({ height: "toggle", opacity: "toggle" }, "slow");
+  });
+
+  $('#login-button').click(function () {
+    $.ajax({
+      url: 'http://localhost:3000/login',
+      // dataType: "jsonp",
+      data: {
+        username: $('#login-uname').val(),
+        password: $('#login-pwd').val()
+      }
+      , type: 'POST',
+      success: function (data) {
+        if (data.errorMsg != null) {
+          alert(data.errorMsg);
+        } else {
+          alert('Welcome : ' + data.username + ' your password is : ' + data.password);
+
+          // redirect to rooms
+        }
+      },
+      error: function (error) {
+        var ret = jQuery.parseJSON(error);
+        console.log(ret);
+      },
+    });
+  });
+
+  $('#create-button').click(function () {
+    $.ajax({
+      url: 'http://localhost:3000/register',
+      // dataType: "jsonp",
+      data: {
+        username: $('#uname').val(),
+        password: $('#pwd').val()
+      }
+      , type: 'POST',
+      success: function (data) {
+        console.log(data);
+        if (data.errorMsg != null) {
+          alert(data.errorMsg);
+        } else {
+          alert('Welcome : ' + data.username + ' your password is : ' + data.password + ' , msg : ' + data.msg);
+          window.location.replace("http://localhost:3000");
+        }
+      },
+      error: function (error) {
+        var ret = jQuery.parseJSON(error);
+        console.log(ret);
+      },
+    });
+  });
+  $("#guest-button").click(function () {
+    $(".login-page").remove();
     // request to get the rooms
     $.getJSON('/rooms', function (data) {
 
