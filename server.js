@@ -233,7 +233,7 @@ const initialRooms = 10;
 const maxNumOfPlayers = 5;
 // set the port for the server
 var server = app.listen(3000, function () {
-    for (let i = 1; i <= maxNumOfPlayers; i++) {
+    for (let i = 1; i <= initialRooms; i++) {
         if (i <= initialRooms) rooms[i] = new Room(i, maxNumOfPlayers, 0);
         else rooms[i] = new Room(i, maxNumOfPlayers, -1);
     }
@@ -380,6 +380,7 @@ app.get('/rooms', function (req, response) {
     if (users[SID] == null) {
         users[SID] = new user("", 0, 0, zerosArr);
     }
+    console.log(users[SID]);
     var features = users[SID].features;
     response.writeHead(200, { "Content-Type": "application/json" });
     var temp = [];
@@ -425,7 +426,7 @@ app.post('/login', function (req, res) {
         //console.log("get function login");
         User.findOne({ username: req.body.username }).then(function (result) {
             if (result.username == req.body.username && result.password == req.body.password) {
-                users[SID] = new user(result.username, result.points, result.coins, zerosArr);
+                users[SID] = new user(result.username, result.points, result.coins, result.features);
                 res.send({
                     username: req.body.username,
                     coins: users[req.sessionID].coins,
@@ -478,8 +479,6 @@ app.post('/buy_ghost', function (req, res) {
 
         users[SID].coins -= ghostPrice;
         users[SID].features[roomName] |= 1;
-        console.log(users[SID].features);
-        console.log(users[SID].username);
         User.updateOne({ username: users[SID].username }, {
             $set: {
                 coins: users[SID].coins,
@@ -513,7 +512,6 @@ app.post('/buy_shots', function (req, res) {
 
         users[SID].coins -= ghostPrice;
         users[SID].features[roomName] |= 1;
-        console.log(users[SID].features);
         User.updateOne({ username: users[SID].username }, {
             $set: {
                 coins: users[SID].coins,
@@ -522,7 +520,7 @@ app.post('/buy_shots', function (req, res) {
         });
 
         res.send({
-            sucess: 1,
+            success: 1,
             coins: users[SID].coins,
             points: users[SID].points
         });
@@ -532,7 +530,7 @@ app.post('/buy_shots', function (req, res) {
             users[SID] = new user("", 0, 0, zerosArr);
         }
         res.send({
-            sucess: 0,
+            success: 0,
             coins: users[SID].coins,
             points: users[SID].points
         });
@@ -574,5 +572,4 @@ app.post('/create_room', function (req, response) {
         });;
         response.end(json);
     });
-
 });

@@ -58,8 +58,10 @@
       }
     }
 
-    function becomeGhost(dom,cnt) {
+    function becomeGhost(dom) {
       //handler for ghoooooooooooost feature
+      console.log("i'm in ghost");
+
       var container = $(dom).parents('.item');
       var room_name = container.find(".room_name").text();
       console.log(room_name);
@@ -73,15 +75,13 @@
         , type: 'POST',
         success: function (data) {
           console.log(data);
+          console.log(dom);
           if (data.success == 1) {
             $('#coins_text').text(data.coins);
             $('#points_text').text(data.points);
-            //dom.css("disabled" , "true");
-            //dom.setAttribute("class", "btn btn-default");
-            // dom.setAttribute("disabled", "true");
-            //dom.disabled =true;
-           
-            $("#ghost_button"+cnt).prop("disabled",true);
+
+            $(dom).prop("disabled", true);
+            console.log(dom);
           }
         },
         error: function (error) {
@@ -109,11 +109,7 @@
           if (data.success == 1) {
             $('#coins_text').text(data.coins);
             $('#points_text').text(data.points);
-            //dom.css("disabled" , "true");
-            //dom.setAttribute("class", "btn btn-default");
-            // dom.setAttribute("disabled", "true");
-            //dom.style.disabled = "true";
-            dom.disabled = true;
+            $(dom).prop("disabled", true);
           }
         },
         error: function (error) {
@@ -128,53 +124,49 @@
       /* console.log("i'm hereeeeee");
        $(".profile").append('<p id="minimumcostlabel">Minimum Cost: </p> <input type="text" name="minimumcost"> <button type"button" id="createnewroomactually">Create</button>');
        */
-      var container = $(dom).parents('.item');
-      var room_name = container.find(".room_name").text();
-      $.ajax({
-        url: 'http://localhost:3000/create_room',
-        // dataType: "jsonp",
+      var min_cost = $('#minimumcost_input').val();
+      if (min_cost) {
+        var container = $(dom).parents('.item');
+        var room_name = container.find(".room_name").text();
+        $.ajax({
+          url: 'http://localhost:3000/create_room',
+          // dataType: "jsonp",
 
-        data: {
-          minimum_points: 0
-
-        }
-        , type: 'POST',
-        success: function (data) {
-          console.log(data);
-          // 0 ydaso 
-          // 1 eshtra ghost
-          // 2 eshtra extra
-          //3 eshtra el etnen
-          $("#grid").remove();
-          $(".world").append('<div class="grid"></div>');
-          for (var i in data['rooms']) {
-            var room = data['rooms'][i];
-            //type 0 login
-            $(".grid").append('<div class="item"><h3 class="room_name">' + room.name + '</h3> <div class="grid-container3"> <span id="happy_span">Happy</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: 40%">      <h6 class="room_bad">' + room.bad + '</h6>         </div>      </div></div>  <div class="grid-container4"> <span id="sad_span">Sad</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: 40%">     <h6 class="room_good">' + room.good + '</h6> </div></div> </div><div class="grid-container2"><button type="button" id="good_button" class="btn btn-default" onclick="goodPlayer(this)">Happy</button><button type="button" id="bad_button" class="btn btn-default" onclick="badPlayer(this)">Sad</button></div><div class="grid-container1"><button type="button" id="ghost_button" class="btn btn-primary" onclick="becomeGhost(this)">Ghost</button><button type="button" id="extrashots_button" class="btn btn-success" onclick="extraShoots(this)">Extra Shots</button></div></div>');
-
-            if (room.feature == 1) {
-              $("#ghost_button").attr("disabled", true);
-              $("#ghost_button").toggleClass("btn btn-default");
-            } else if (room.feature == 2) {
-              $("#extrashots_button").attr("disabled", true);
-              $("#extrashots_button").toggleClass("btn btn-default");
-            }
-            else if (room.feature == 3) {
-              $("#ghost_button").attr("disabled", true);
-              $("#extrashots_button").attr("disabled", true);
-              $("#ghost_button").toggleClass("btn btn-default");
-              $("#extrashots_button").toggleClass("btn btn-default");
-            }
-
+          data: {
+            minimum_points: 0
 
           }
-
-        },
-        error: function (error) {
-          var ret = jQuery.parseJSON(error);
-          console.log(ret);
-        },
-      });
+          , type: 'POST',
+          success: function (data) {
+            console.log(data);
+            // 0 ydaso 
+            // 1 eshtra ghost
+            // 2 eshtra extra
+            //3 eshtra el etnen
+            $("#grid").remove();
+            $(".world").append('<div class="grid"></div>');
+            for (var i in data['rooms']) {
+              var room = data['rooms'][i];
+              //type 0 login
+              if (room.feature == 0) {
+                $(".grid").append('<div class="item"><h3 class="room_name">' + room.name + '</h3> <div class="grid-container3"> <span id="happy_span">Happy</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: 40%">      <h6 class="room_bad">' + room.bad + '</h6>         </div>      </div></div>  <div class="grid-container4"> <span id="sad_span">Sad</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: 40%">     <h6 class="room_good">' + room.good + '</h6> </div></div> </div><div class="grid-container2"><button type="button" id="good_button" class="btn btn-default" onclick="goodPlayer(this)">Happy</button><button type="button" id="bad_button" class="btn btn-default" onclick="badPlayer(this)">Sad</button></div><div class="grid-container1"><button type="button" id="ghost_button" class="btn btn-primary" onclick="becomeGhost(this)">Ghost <span class="tooltiptext1">-100 Coins</span></button><button type="button" id="extrashots_button" class="btn btn-success" onclick="extraShoots(this)">Extra Shots <span class="tooltiptext2">-50 Coins</span></button></div></div>');
+              }
+              if (room.feature == 1) {
+                $(".grid").append('<div class="item"><h3 class="room_name">' + room.name + '</h3> <div class="grid-container3"> <span id="happy_span">Happy</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: 40%">      <h6 class="room_bad">' + room.bad + '</h6>         </div>      </div></div>  <div class="grid-container4"> <span id="sad_span">Sad</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: 40%">     <h6 class="room_good">' + room.good + '</h6> </div></div> </div><div class="grid-container2"><button type="button" id="good_button" class="btn btn-default" onclick="goodPlayer(this)">Happy</button><button type="button" id="bad_button" class="btn btn-default" onclick="badPlayer(this)">Sad</button></div><div class="grid-container1"><button type="button" id="ghost_button" disabled="true" class="btn btn-primary" onclick="becomeGhost(this)">Ghost <span class="tooltiptext1">-100 Coins</span></button><button type="button" id="extrashots_button" class="btn btn-success" onclick="extraShoots(this)">Extra Shots <span class="tooltiptext2">-50 Coins</span></button></div></div>');
+              } else if (room.feature == 2) {
+                $(".grid").append('<div class="item"><h3 class="room_name">' + room.name + '</h3> <div class="grid-container3"> <span id="happy_span">Happy</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: 40%">      <h6 class="room_bad">' + room.bad + '</h6>         </div>      </div></div>  <div class="grid-container4"> <span id="sad_span">Sad</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: 40%">     <h6 class="room_good">' + room.good + '</h6> </div></div> </div><div class="grid-container2"><button type="button" id="good_button" class="btn btn-default" onclick="goodPlayer(this)">Happy</button><button type="button" id="bad_button" class="btn btn-default" onclick="badPlayer(this)">Sad</button></div><div class="grid-container1"><button type="button" id="ghost_button" class="btn btn-primary" onclick="becomeGhost(this)">Ghost</button><button type="button" id="extrashots_button" diabled="true" class="btn btn-success" onclick="extraShoots(this)">Extra Shots</button></div></div>');
+              }
+              else if (room.feature == 3) {
+                $(".grid").append('<div class="item"><h3 class="room_name">' + room.name + '</h3> <div class="grid-container3"> <span id="happy_span">Happy</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: 40%">      <h6 class="room_bad">' + room.bad + '</h6>         </div>      </div></div>  <div class="grid-container4"> <span id="sad_span">Sad</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: 40%">     <h6 class="room_good">' + room.good + '</h6> </div></div> </div><div class="grid-container2"><button type="button" id="good_button" class="btn btn-default" onclick="goodPlayer(this)">Happy</button><button type="button" id="bad_button" class="btn btn-default" onclick="badPlayer(this)">Sad</button></div><div class="grid-container1"><button type="button" id="ghost_button" diabled="true" class="btn btn-primary" onclick="becomeGhost(this)">Ghost</button><button type="button" id="extrashots_button" diabled="true" class="btn btn-success" onclick="extraShoots(this)">Extra Shots</button></div></div>');
+              }
+            }
+          },
+          error: function (error) {
+            var ret = jQuery.parseJSON(error);
+            console.log(ret);
+          },
+        });
+      }
 
     }
   </script>
