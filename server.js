@@ -1,12 +1,13 @@
 var distToMove = 0.1;
-var maxHealth = 50;
+var maxHealth = 10;
 var mapHeight = 2000, mapWidth = 2000, distToOrbit = 55;
 var radBig = 60, radObject = 20;
 var maxBullets = 100;
 var healthInc = 10, bulletsInc = 5;
 var playerSpeed = 0.01;
-var ghostPrice = 0, shotsPrice = 0;
+var ghostPrice = 100, shotsPrice = 50;
 var minimumPointsToOpenRoom = 1000;
+var shotsAdd = 50;
 // import express to host the server
 var express = require('express');
 // import the socket to control in and out on serever
@@ -15,6 +16,13 @@ var socket = require('socket.io');
 var app = express();
 // give the host the files that will be shown to clients
 app.use(express.static('public'));
+
+var socketToSession = [];
+var rooms = [];
+const maxNumOfRomms = 20;
+const initialRooms = 10;
+const maxNumOfPlayers = 1;
+
 // run the socket on the server
 // the player class holds all information about a player
 class user {
@@ -23,6 +31,25 @@ class user {
         this.points = points;
         this.coins = coins;
         this.features = features;
+        this.room = -1;
+        this.type = -1;
+    }
+    // update user after room end
+    updateUser(coins, points) {
+        if (this.username) {
+            this.coins += coins;
+            this.points += points;
+            this.points = Math.max(this.points, 0);
+
+            User.updateOne({ username: this.username }, {
+                $set: {
+                    coins: this.coins,
+                    points: this.points
+                }
+            }, function (err, res) {
+                if (err) throw err;
+            });
+        }
     }
 }
 var users = [];
@@ -44,7 +71,8 @@ class Player {
         this.dir = {
             dx: 0,
             dy: 0
-        }
+        };
+        this.special = 0;
     }
     // move specific player on his mouse event
     move() {
@@ -61,15 +89,17 @@ class Player {
 
 // the room class holds all information about the room and the players inside it
 class Room {
-    constructor(name, num, state) {
+    constructor(name, state, points) {
         this.autoIncrementId = 0;
         this.roomName = name;
-        this.good = num;
-        this.bad = num;
-        this.initialNum = num;
+        this.good = maxNumOfPlayers;
+        this.bad = maxNumOfPlayers;
         this.players = [];
         this.objects = [];
         this.state = state; // 0 means not in game , 1 means in  game
+        this.reward = 10;
+        this.addPoints = points;
+        this.minCostToJoin = 0;
     }
     addPlayer(player) {
         this.players[this.autoIncrementId] = player;
@@ -97,7 +127,6 @@ class Room {
                     var x = this.players[k].playerCurX, y = this.players[k].playerCurY;
 
                     if ((x - bx) * (x - bx) + (y - by) * (y - by) <= radBig * radBig) {
-
                         this.players[k].health--;
                         f = 1;
                     }
@@ -225,17 +254,51 @@ class Room {
         this.good = this.initialNum;
         this.bad = this.initialNum;
     }
+    checkEndGame() {
+        var curGood = 0, curBad = 0;
+        for (var player in this.players) {
+            if (this.players[player].health > 0) {
+                if (this.players[player].type == 0) curGood++;
+                else curBad++;
+            }
+        }
+        if (curBad == 0 || curGood == 0) {
+            this.endGame(curBad, curGood);
+        }
+    }
+    endGame(curBad, curGood) {
+        // update players scores and points
+        if (curGood > 0 || curBad > 0) {
+            var winnerType;
+            if (curGood > 0) winnerType = 0;
+            else winnerType = 1;
+            for (var player in this.players) {
+                var SID = socketToSession[this.players[player].socketId];
+                if (this.players[player].type == winnerType) users[SID].updateUser(this.reward, this.addPoints);
+                else users[SID].updateUser(0, -this.addPoints);
+            }
+        }
+        // disconnect the players and return them back to the rooms
+        io.to(this.roomName).emit('endGame');
+
+        // reset room data
+        this.autoIncrementId = 0;
+        this.good = maxNumOfPlayers;
+        this.bad = maxNumOfPlayers;
+        this.players = [];
+        this.objects = [];
+        if (this.roomName <= 10) {
+            this.state = 0;
+        }
+        else this.state = -1;
+    }
 }
 
-var rooms = [];
-const maxNumOfRomms = 20;
-const initialRooms = 10;
-const maxNumOfPlayers = 5;
 // set the port for the server
 var server = app.listen(3000, function () {
-    for (let i = 1; i <= initialRooms; i++) {
-        if (i <= initialRooms) rooms[i] = new Room(i, maxNumOfPlayers, 0);
-        else rooms[i] = new Room(i, maxNumOfPlayers, -1);
+    for (let i = 1; i <= maxNumOfRomms; i++) {
+        if (i <= initialRooms) rooms[i] = new Room(i, 0, 10);
+        else rooms[i] = new Room(i, -1, 0);
     }
     setIO();
 });
@@ -252,9 +315,9 @@ function newConnection(socket) {
     socket.on('disconnect', function () {
         disconnect(socket);
     });
-    // assign player to the room
-    socket.on('room', function (data) {
-        add(socket, data);
+    // assign room to socket
+    socket.on('room', function () {
+        add(socket);
     });
     // handle a player move
     socket.on('moving', function (data) {
@@ -266,6 +329,7 @@ function newConnection(socket) {
     });
 }
 function changeDir(data, socket) {
+    if (socket == null || socket.roomName == null || rooms[socket.roomName].state != 1) return;
     var idx = rooms[socket.roomName].getPos(socket.id);
     var player = rooms[socket.roomName].players[idx];
     if (player.health > 0) {
@@ -275,29 +339,62 @@ function changeDir(data, socket) {
         rooms[socket.roomName].players[idx].move();
         rooms[socket.roomName].send();
     }
-
 }
 function disconnect(socket) {
+    if (socket.roomName == null) return;
+    users[socket.SID].room = -1;
+    users[socket.SID].type = -1;
     // print the id of this client 
     console.log(socket.id + " left");
-    var idx = rooms[socket.roomName].getPos(socket.id);
-    if (rooms[socket.roomName].state == 0) {
-        if (rooms[socket.roomName].players[idx].type == 0) rooms[socket.roomName].good++;
-        else rooms[socket.roomName].bad++;
+    if (rooms[socket.roomName].players.length != 0) {
+        var idx = rooms[socket.roomName].getPos(socket.id);
+        if (rooms[socket.roomName].state == 0) {
+            if (rooms[socket.roomName].players[idx].type == 0) rooms[socket.roomName].good++;
+            else rooms[socket.roomName].bad++;
+        }
+        rooms[socket.roomName].players.splice(idx, 1);
+        rooms[socket.roomName].autoIncrementId--;
     }
-    rooms[socket.roomName].players.splice(idx, 1);
-    rooms[socket.roomName].autoIncrementId--;
 }
 
 // assign a player to a room
-function add(socket, data) {
+function add(socket) {
+    var SID = socketToSession[socket.id];
+    var data = users[SID];
+    if (data.room == -1) {
+        socket.disconnect(true);
+        return;
+    }
     socket.join(data.room, function () {
         socket.roomName = data.room;
+        socket.SID = SID;
         var playerData = {
             socketId: socket.id,
             type: data.type
         }
-        rooms[data.room].addPlayer(new Player(playerData));
+        var player = new Player(playerData);
+        if (users[SID].features[data.room] == 1) {
+            player.special = 1;
+        }
+        else if (users[SID].features[data.room] == 2) {
+            player.shots += shotsAdd;
+        }
+        else if (users[SID].features[data.room] == 3) {
+            player.special = 1;
+            player.shots += shotsAdd;
+        }
+        if(users[SID].features[data.room] != 0)
+        {
+            users[SID].features[data.room] = 0;
+            User.updateOne({ username: users[SID].username }, {
+                $set: {
+                    features: users[SID].features
+                }
+            }, function (err, res) {
+                if (err) throw err;
+            });  
+        }
+        rooms[data.room].addPlayer(player);
         if (data.type == 0) rooms[data.room].good--;
         else rooms[data.room].bad--;
         if (rooms[data.room].bad == 0 && rooms[data.room].good == 0) {
@@ -307,6 +404,7 @@ function add(socket, data) {
 }
 // move a bullet to specific player
 function addBullet(data, socket) {
+    if (socket == null || socket.roomName == null || rooms[socket.roomName].state != 1) return;
     var idx = rooms[socket.roomName].getPos(socket.id);
     var player = rooms[socket.roomName].players[idx];
     if (player.health > 0) {
@@ -338,6 +436,7 @@ function play() {
             rooms[i].bulletsToPlayersCollesion();
             rooms[i].genObject();
             rooms[i].send();
+            rooms[i].checkEndGame();
         }
     }
 }
@@ -375,7 +474,7 @@ mongoose.connection.once('open', function () {
 });
 
 var zerosArr = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-app.get('/rooms', function (req, response) {
+function getRooms(req, response) {
     var SID = req.sessionID;
     if (users[SID] == null) {
         users[SID] = new user("", 0, 0, zerosArr);
@@ -392,7 +491,9 @@ app.get('/rooms', function (req, response) {
                 name: val.roomName,
                 good: val.good,
                 bad: val.bad,
-                feature: curFeature
+                feature: curFeature,
+                goodPercent: val.good * 100.0 / maxNumOfPlayers,
+                badPercent: val.bad * 100.0 / maxNumOfPlayers,
             }
             temp.push(data);
         }
@@ -409,7 +510,9 @@ app.get('/rooms', function (req, response) {
         coins: users[SID].coins
     });
     response.end(json);
-
+}
+app.get('/rooms', function (req, response) {
+    getRooms(req, response);
 });
 
 app.get('/preLoad', function (req, res) {
@@ -418,15 +521,17 @@ app.get('/preLoad', function (req, res) {
         users[SID] = new user("", 0, 0, zerosArr);
     }
     var logged = 0;
-    if(users[SID].username) logged = 1;
+    if (users[SID].username) logged = 1;
     //console.log(users[SID]);
     res.send({
         loggedIn: logged
     });
 });
-app.post('/logOut', function (req, res) {
+app.post('/logout', function (req, res) {
     var SID = req.sessionID;
     users[SID] = new user("", 0, 0, zerosArr);
+    res.send({
+    });
 });
 app.post('/login', function (req, res) {
     if (req.sessionID) {
@@ -514,7 +619,7 @@ app.post('/buy_ghost', function (req, res) {
     }
 });
 app.post('/buy_shots', function (req, res) {
-    if (req.sessionID && users[req.sessionID] && users[req.sessionID].coins > ghostPrice) {
+    if (req.sessionID && users[req.sessionID] && users[req.sessionID].coins >= ghostPrice) {
         var SID = req.sessionID;
         var roomName = req.body.room;
 
@@ -525,6 +630,8 @@ app.post('/buy_shots', function (req, res) {
                 coins: users[SID].coins,
                 features: users[SID].features
             }
+        }, function (err, res) {
+            if (err) throw err;
         });
 
         res.send({
@@ -546,38 +653,62 @@ app.post('/buy_shots', function (req, res) {
 });
 
 app.post('/create_room', function (req, response) {
-    User.findOne({ username: req.body.username }).then(function (result) {
-        // validate that this user can create a room
-        if (result && result.points >= minimumPointsToOpenRoom) {
-            // check that the numbers of created rooms below the limit
-            var idx = -1;
-            for (var i in rooms) {
-                if (rooms[i].state == -1) { idx = i; break; }
-            }
-            if (idx != -1) {
-                rooms[idx].state = 0;
-            }
+    var SID = req.sessionID;
+    var mini = parseInt(req.body.minimum_points);
+
+    // validate that this user can create a room
+    if (users[SID].points >= minimumPointsToOpenRoom) {
+        // check that the numbers of created rooms below the limit
+        var idx = -1;
+        for (var i in rooms) {
+            if (rooms[i].state == -1) { idx = i; break; }
         }
-        var features = users[SID].features;
-        response.writeHead(200, { "Content-Type": "application/json" });
-        var temp = [];
-        for (let key in rooms) {
-            let val = rooms[key];
-            if (val.state == 0) {
-                var curFeature = features[key];
-                var data = {
-                    name: val.roomName,
-                    good: val.good,
-                    bad: val.bad,
-                    feature: curFeature
+        if (idx != -1) {
+            rooms[idx].state = 0;
+            rooms[idx].reward = Math.max(0, mini * 2);
+            rooms[idx].minCostToJoin = Math.max(0, mini);
+        }
+    }
+    getRooms(req, response);
+});
+app.post('/join_room', function (req, response) {
+    var SID = req.sessionID;
+    var room = req.body.room;
+    var type = req.body.type;
+    if (room >= 1 && room <= 20 && rooms[room].state == 0
+        && ((rooms[room].good > 0 && type == 0) || (rooms[room].bad > 0 && type == 1))
+        && users[SID].coins >= rooms[room].minCostToJoin && users[SID].room == -1) {
+        if (rooms[room].minCostToJoin != 0) {
+            users[SID].coins -= rooms[room].minCostToJoin;
+            User.updateOne({ username: users[SID].username }, {
+                $set: {
+                    coins: users[SID].coins,
                 }
-                temp.push(data);
-            }
+            }, function (err, res) {
+                if (err) throw err;
+            });
         }
-        var json = JSON.stringify({
-            rooms: temp,
-            type: 0
-        });;
-        response.end(json);
+        users[SID].room = room;
+        users[SID].type = type;
+        response.send({
+            success: 1
+        });
+    }
+    else {
+        response.send({
+            success: 0
+        });
+    }
+});
+app.post('/create_socket', function (req, response) {
+    var SID = req.sessionID;
+    var clientSocket = req.body.socket;
+    socketToSession[clientSocket] = SID;
+    response.send({
     });
 });
+
+
+
+
+
