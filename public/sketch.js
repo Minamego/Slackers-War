@@ -75,7 +75,6 @@ function beforeGame() {
       }
       , type: 'POST',
       success: function (data) {
-        console.log(data);
         if (data.errorMsg != null) {
           alert(data.errorMsg);
         } else {
@@ -97,7 +96,6 @@ function viewRooms() {
   $(".login-page").remove();
   // request to get the rooms
   $.getJSON('/rooms', function (data) {
-    console.log(data);
     $('body').append('<div class="world"></div>');
     $("#defaultCanvas0").remove();
     $(".world").append('<div class="grid"></div>');
@@ -108,7 +106,6 @@ function viewRooms() {
       $(".profile").append('<span id="username_label">UserName: </span> <span id="username_text">' + data.username + '</span> <br><span id="coins_label">Coins: </span><span id="coins_text">' + data.coins + '</span><br><span id="points_label">Points: </span><span id="points_text">' + data.points + '</span><br>');
       $(".profile").append('<div id="wrapper_create_new_room"> <input id="minimumcost_input" type="text" class="form-control" placeholder="Minimum cost for entering the room" aria-describedby="basic-addon2" required> <button type="button" id="createnewroom" class="btn btn-info" onclick="requestToCreateRoom(this)">Create New Room</button></div>');
     }
-    console.log("data type: " + data.type);
     for (var i in data['rooms']) {
       var room = data['rooms'][i];
       //type 0 login
@@ -143,7 +140,7 @@ function viewRooms() {
 function prepare(data) {
   createCanvas(windowWidth, windowHeight);
   winWidth = windowWidth, winHeight = windowHeight;
-  background(backgroundImg);
+  background(0);
 
   // create connection with the server through client socket
   socket = io.connect();

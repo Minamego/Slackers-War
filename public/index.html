@@ -29,9 +29,22 @@
   <link rel="stylesheet" href="room.css">
   <link rel="stylesheet" href="index.css">
   <script>
-
+    function onLoad() {
+      $.ajax({
+        url: 'http://localhost:3000/preLoad',
+        type: 'GET',
+        success: function (data) {
+          if (data.loggedIn) {
+            viewRooms();
+          }
+        },
+        error: function (error) {
+          var ret = jQuery.parseJSON(error);
+          console.log(ret);
+        },
+      });
+    }
     function goodPlayer(dom) {
-
       var container = $(dom).parents('.item');
       var good_num = container.find(".room_good").text();
       console.log("good: " + good_num);
@@ -172,7 +185,7 @@
   </script>
 </head>
 
-<body>
+<body onload="onLoad()">
   <div class="login-page">
 
     <div class="form">

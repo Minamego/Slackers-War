@@ -380,7 +380,6 @@ app.get('/rooms', function (req, response) {
     if (users[SID] == null) {
         users[SID] = new user("", 0, 0, zerosArr);
     }
-    console.log(users[SID]);
     var features = users[SID].features;
     response.writeHead(200, { "Content-Type": "application/json" });
     var temp = [];
@@ -413,14 +412,23 @@ app.get('/rooms', function (req, response) {
 
 });
 
-app.get('/', function (req, res) {
-
-    console.log("hello");
-
+app.get('/preLoad', function (req, res) {
+    var SID = req.sessionID;
+    if (users[SID] == null) {
+        users[SID] = new user("", 0, 0, zerosArr);
+    }
+    var logged = 0;
+    if(users[SID].username) logged = 1;
+    //console.log(users[SID]);
+    res.send({
+        loggedIn: logged
+    });
 });
-
+app.post('/logOut', function (req, res) {
+    var SID = req.sessionID;
+    users[SID] = new user("", 0, 0, zerosArr);
+});
 app.post('/login', function (req, res) {
-
     if (req.sessionID) {
         var SID = req.sessionID;
         //console.log("get function login");
@@ -489,7 +497,7 @@ app.post('/buy_ghost', function (req, res) {
         });
 
         res.send({
-            sucess: 1,
+            success: 1,
             coins: users[SID].coins,
             points: users[SID].points
         });
@@ -499,7 +507,7 @@ app.post('/buy_ghost', function (req, res) {
             users[SID] = new user("", 0, 0, zerosArr);
         }
         res.send({
-            sucess: 0,
+            success: 0,
             coins: users[SID].coins,
             points: users[SID].points
         });
