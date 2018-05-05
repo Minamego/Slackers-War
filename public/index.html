@@ -31,7 +31,7 @@
   <script>
     function onLoad() {
       $.ajax({
-        url: 'http://localhost:3000/preLoad',
+        url: 'http://193.227.9.124:21516/preLoad',
         type: 'GET',
         success: function (data) {
           if (data.loggedIn) {
@@ -57,7 +57,7 @@
         };
 
         $.ajax({
-          url: 'http://localhost:3000/join_room',
+          url: 'http://193.227.9.124:21516/join_room',
           // dataType: "jsonp",
 
           data: roomData
@@ -87,7 +87,7 @@
         };
 
         $.ajax({
-          url: 'http://localhost:3000/join_room',
+          url: 'http://193.227.9.124:21516/join_room',
           // dataType: "jsonp",
 
           data: roomData
@@ -114,7 +114,7 @@
       var room_name = container.find(".room_name").text();
       console.log(room_name);
       $.ajax({
-        url: 'http://localhost:3000/buy_ghost',
+        url: 'http://193.227.9.124:21516/buy_ghost',
         // dataType: "jsonp",
 
         data: {
@@ -144,7 +144,7 @@
       var container = $(dom).parents('.item');
       var room_name = container.find(".room_name").text();
       $.ajax({
-        url: 'http://localhost:3000/buy_shots',
+        url: 'http://193.227.9.124:21516/buy_shots',
         // dataType: "jsonp",
 
         data: {
@@ -177,7 +177,7 @@
         var container = $(dom).parents('.item');
         var room_name = container.find(".room_name").text();
         $.ajax({
-          url: 'http://localhost:3000/create_room',
+          url: 'http://193.227.9.124:21516/create_room',
           // dataType: "jsonp",
 
           data: {
@@ -219,13 +219,13 @@
     }
     function logoutHandler(dom) {
       $.ajax({
-        url: 'http://localhost:3000/logout',
+        url: 'http://193.227.9.124:21516/logout',
 
         data: {
         }
         , type: 'POST',
         success: function (data) {
-          window.location.replace('http://localhost:3000');
+          window.location.replace('http://193.227.9.124:21516');
         },
         error: function (error) {
           var ret = jQuery.parseJSON(error);

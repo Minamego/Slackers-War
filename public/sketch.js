@@ -43,7 +43,7 @@ function beforeGame() {
 
   $('#login-button').click(function () {
     $.ajax({
-      url: 'http://localhost:3000/login',
+      url: 'http://193.227.9.124:21516/login',
       // dataType: "jsonp",
       data: {
         username: $('#login-uname').val(),
@@ -68,7 +68,7 @@ function beforeGame() {
 
   $('#create-button').click(function () {
     $.ajax({
-      url: 'http://localhost:3000/register',
+      url: 'http://193.227.9.124:21516/register',
       // dataType: "jsonp",
       data: {
         username: $('#uname').val(),
@@ -80,7 +80,7 @@ function beforeGame() {
           alert(data.errorMsg);
         } else {
           // alert('Welcome : ' + data.username  + ' , msg : ' + data.msg);
-          window.location.replace("http://localhost:3000");
+          window.location.replace("http://193.227.9.124:21516");
         }
       },
       error: function (error) {
@@ -146,7 +146,7 @@ function prepare(data) {
   socket = io();
   socket.on("connect", function () {
     $.ajax({
-      url: 'http://localhost:3000/create_socket',
+      url: 'http://193.227.9.124:21516/create_socket',
       // dataType: "jsonp",
       data:
         {
