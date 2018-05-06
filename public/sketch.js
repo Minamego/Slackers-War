@@ -228,6 +228,7 @@ function endGame() {
   hasShots = 0;
   socket.disconnect(true);
   viewRooms();
+  document.getElementById('slackers-chat').style.display = 'none';
 }
 
 function mouseClicked() {
