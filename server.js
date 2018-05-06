@@ -295,7 +295,7 @@ class Room {
 }
 
 // set the port for the server
-var server = app.listen(21516, function () {
+var server = app.listen(3000, function () {
     for (let i = 1; i <= maxNumOfRomms; i++) {
         if (i <= initialRooms) rooms[i] = new Room(i, 0, 10);
         else rooms[i] = new Room(i, -1, 0);
