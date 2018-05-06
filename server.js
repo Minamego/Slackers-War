@@ -1,4 +1,4 @@
-var distToMove = 0.1;
+var distToMove = 0.5;
 var maxHealth = 10;
 var mapHeight = 2000, mapWidth = 2000, distToOrbit = 55;
 var radBig = 60, radObject = 20;
@@ -327,6 +327,15 @@ function newConnection(socket) {
     socket.on('shooting', function (data) {
         addBullet(data, socket);
     });
+    // Handle chat event
+    socket.on('chat', function (data) {
+        // console.log(data);
+        if(socket.roomName) io.to(socket.roomName).emit('chat', data);
+    });
+    // Handle typing event
+    socket.on('typing', function (data) {
+        if(socket.roomName) socket.broadcast.to(socket.roomName).emit('typing', data);
+    });
 }
 function changeDir(data, socket) {
     if (socket == null || socket.roomName == null || rooms[socket.roomName].state != 1) return;
@@ -361,7 +370,7 @@ function disconnect(socket) {
 function add(socket) {
     var SID = socketToSession[socket.id];
     var data = users[SID];
-    if (data.room == -1) {
+    if (data == null || data.room == -1) {
         socket.disconnect(true);
         return;
     }
@@ -383,8 +392,7 @@ function add(socket) {
             player.special = 1;
             player.shots += shotsAdd;
         }
-        if(users[SID].features[data.room] != 0)
-        {
+        if (users[SID].features[data.room] != 0) {
             users[SID].features[data.room] = 0;
             User.updateOne({ username: users[SID].username }, {
                 $set: {
@@ -392,7 +400,7 @@ function add(socket) {
                 }
             }, function (err, res) {
                 if (err) throw err;
-            });  
+            });
         }
         rooms[data.room].addPlayer(player);
         if (data.type == 0) rooms[data.room].good--;
@@ -465,7 +473,7 @@ app.use(session({
     saveUninitialized: true
 }));
 
-mongoose.connect('mongodb://193.227.9.124/slackers');
+mongoose.connect('mongodb://localhost/slackers');
 mongoose.connection.once('open', function () {
     console.log('Connection has been made, now make fireworks...');
 

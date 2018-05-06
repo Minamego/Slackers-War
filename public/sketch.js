@@ -14,13 +14,14 @@ var myPos = {
   x: winWidth / 2,
   y: winHeight / 2
 }
+var playerName = "";
 var maxSystemRoomsNumber = 10;
 function setup() {
   // before user joins a room
   beforeGame();
 
   // load the images
-  goodImg = loadImage("good.png"); 
+  goodImg = loadImage("good.png");
   badImg = loadImage("bad.png");
   specialImg = loadImage("special.png");
   bulletsImg = loadImage("bullets.png");
@@ -34,8 +35,25 @@ function setup() {
   emptyGun = loadSound('emptyGun.mp3');
 
 }
+function toggleChat() {
+  console.log("title-chat clicked");
+  $('#chat-window').animate({ height: "toggle", opacity: "toggle" }, "slow");
+  $('#message').animate({ height: "toggle", opacity: "toggle" }, "slow");
+  $('#send').animate({ height: "toggle", opacity: "toggle" }, "slow");
+  document.getElementById("message").focus();
+}
 function beforeGame() {
   alive = 0;
+
+  $(document).keypress(function (e) {
+    console.log(e.which);
+    if (e.which == 0) toggleChat();
+    else if (e.which == 13) sendMessage();
+    else {
+      document.getElementById("message").focus();
+    }
+  });
+
 
   $('.message a').click(function () {
     $('.login-register').animate({ height: "toggle", opacity: "toggle" }, "slow");
@@ -54,9 +72,8 @@ function beforeGame() {
         if (data.errorMsg != null) {
           alert(data.errorMsg);
         } else {
-          // alert('Welcome : ' + data.username);
-          // redirect to rooms
           viewRooms();
+          playerName = data.username;
         }
       },
       error: function (error) {
@@ -113,20 +130,20 @@ function viewRooms() {
       //type 0 login
       if (data.type == 0) {
         if (room.feature == 0) {
-          $(".grid").append('<div class="item"><h3 class="room_name">' + room.name + '</h3> <div class="grid-container3"> <span id="sad_span">Sad</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width:'+ room.badPercent+'%">       <h6 class="room_bad">' + room.bad + '</h6>         </div>      </div></div>  <div class="grid-container4"> <span id="happy_span">Happy</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width:'+ room.goodPercent+'%">     <h6 class="room_good">' + room.good + '</h6> </div></div> </div><div class="grid-container2"><button type="button" id="good_button" class="btn btn-default" onclick="goodPlayer(this)">Happy</button><button type="button" id="bad_button" class="btn btn-default" onclick="badPlayer(this)">Sad</button></div><div class="grid-container1"><button type="button" id="ghost_button" class="btn btn-primary" onclick="becomeGhost(this)">Emoji <span class="tooltiptext" >-100 Coins</span></button><button type="button" id="extrashots_button" class="btn btn-success" onclick="extraShoots(this)">Extra Shots <span class="tooltiptext2">-50 Coins</span> </button></div></div>');
+          $(".grid").append('<div class="item"><h3 class="room_name">' + room.name + '</h3> <div class="grid-container3"> <span id="sad_span">Sad</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width:' + room.badPercent + '%">       <h6 class="room_bad">' + room.bad + '</h6>         </div>      </div></div>  <div class="grid-container4"> <span id="happy_span">Happy</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width:' + room.goodPercent + '%">     <h6 class="room_good">' + room.good + '</h6> </div></div> </div><div class="grid-container2"><button type="button" id="good_button" class="btn btn-default" onclick="goodPlayer(this)">Happy</button><button type="button" id="bad_button" class="btn btn-default" onclick="badPlayer(this)">Sad</button></div><div class="grid-container1"><button type="button" id="ghost_button" class="btn btn-primary" onclick="becomeGhost(this)">Emoji <span class="tooltiptext" >-100 Coins</span></button><button type="button" id="extrashots_button" class="btn btn-success" onclick="extraShoots(this)">Extra Shots <span class="tooltiptext2">-50 Coins</span> </button></div></div>');
 
         }
         else if (room.feature == 1) {
-          $(".grid").append('<div class="item"><h3 class="room_name">' + room.name + '</h3> <div class="grid-container3"> <span id="sad_span">Sad</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width:'+ room.badPercent+'%">      <h6 class="room_bad">' + room.bad + '</h6>         </div>      </div></div>  <div class="grid-container4"> <span id="happy_span">Happy</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width:'+ room.goodPercent+'%">      <h6 class="room_good">' + room.good + '</h6> </div></div> </div><div class="grid-container2"><button type="button" id="good_button" class="btn btn-default" onclick="goodPlayer(this)">Happy</button><button type="button" id="bad_button" class="btn btn-default" onclick="badPlayer(this)">Sad</button></div><div class="grid-container1"><button type="button" id="ghost_button" class="btn btn-primary" onclick="becomeGhost(this)" disabled="true">Emoji <span class="tooltiptext"  style="display:none" >-100 Coins</span></button><button type="button" id="extrashots_button" class="btn btn-success" onclick="extraShoots(this)">Extra Shots <span class="tooltiptext2">-50 Coins</span> </button></div></div>');
+          $(".grid").append('<div class="item"><h3 class="room_name">' + room.name + '</h3> <div class="grid-container3"> <span id="sad_span">Sad</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width:' + room.badPercent + '%">      <h6 class="room_bad">' + room.bad + '</h6>         </div>      </div></div>  <div class="grid-container4"> <span id="happy_span">Happy</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width:' + room.goodPercent + '%">      <h6 class="room_good">' + room.good + '</h6> </div></div> </div><div class="grid-container2"><button type="button" id="good_button" class="btn btn-default" onclick="goodPlayer(this)">Happy</button><button type="button" id="bad_button" class="btn btn-default" onclick="badPlayer(this)">Sad</button></div><div class="grid-container1"><button type="button" id="ghost_button" class="btn btn-primary" onclick="becomeGhost(this)" disabled="true">Emoji <span class="tooltiptext"  style="display:none" >-100 Coins</span></button><button type="button" id="extrashots_button" class="btn btn-success" onclick="extraShoots(this)">Extra Shots <span class="tooltiptext2">-50 Coins</span> </button></div></div>');
         } else if (room.feature == 2) {
-          $(".grid").append('<div class="item"><h3 class="room_name">' + room.name + '</h3> <div class="grid-container3"> <span id="sad_span">Sad</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width:'+ room.badPercent+'%">      <h6 class="room_bad">' + room.bad + '</h6>         </div>      </div></div>  <div class="grid-container4"> <span id="happy_span">Happy</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width:'+ room.goodPercent+'%">      <h6 class="room_good">' + room.good + '</h6> </div></div> </div><div class="grid-container2"><button type="button" id="good_button" class="btn btn-default" onclick="goodPlayer(this)">Happy</button><button type="button" id="bad_button" class="btn btn-default" onclick="badPlayer(this)">Sad</button></div><div class="grid-container1"><button type="button" id="ghost_button" class="btn btn-primary" onclick="becomeGhost(this)">Emoji <span class="tooltiptext" >-100 Coins</span></button><button type="button" id="extrashots_button" class="btn btn-success" onclick="extraShoots(this)" disabled="true">Extra Shots <span class="tooltiptext2"  style="display:none">-50 Coins</span> </button></div></div>');
+          $(".grid").append('<div class="item"><h3 class="room_name">' + room.name + '</h3> <div class="grid-container3"> <span id="sad_span">Sad</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width:' + room.badPercent + '%">      <h6 class="room_bad">' + room.bad + '</h6>         </div>      </div></div>  <div class="grid-container4"> <span id="happy_span">Happy</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width:' + room.goodPercent + '%">      <h6 class="room_good">' + room.good + '</h6> </div></div> </div><div class="grid-container2"><button type="button" id="good_button" class="btn btn-default" onclick="goodPlayer(this)">Happy</button><button type="button" id="bad_button" class="btn btn-default" onclick="badPlayer(this)">Sad</button></div><div class="grid-container1"><button type="button" id="ghost_button" class="btn btn-primary" onclick="becomeGhost(this)">Emoji <span class="tooltiptext" >-100 Coins</span></button><button type="button" id="extrashots_button" class="btn btn-success" onclick="extraShoots(this)" disabled="true">Extra Shots <span class="tooltiptext2"  style="display:none">-50 Coins</span> </button></div></div>');
         }
         else if (room.feature == 3) {
-          $(".grid").append('<div class="item"><h3 class="room_name">' + room.name + '</h3> <div class="grid-container3"> <span id="sad_span">Sad</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width:'+ room.badPercent+'%">      <h6 class="room_bad">' + room.bad + '</h6>         </div>      </div></div>  <div class="grid-container4"> <span id="happy_span">Happy</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width:'+ room.goodPercent+'%">      <h6 class="room_good">' + room.good + '</h6> </div></div> </div><div class="grid-container2"><button type="button" id="good_button" class="btn btn-default" onclick="goodPlayer(this)">Happy</button><button type="button" id="bad_button" class="btn btn-default" onclick="badPlayer(this)">Sad</button></div><div class="grid-container1"><button type="button" id="ghost_button" class="btn btn-primary" onclick="becomeGhost(this)" disabled="true">Emoji <span class="tooltiptext"  style="display:none">-100 Coins</span></button><button type="button" id="extrashots_button" class="btn btn-success" onclick="extraShoots(this)" disabled="true">Extra Shots <span class="tooltiptext2"  style="display:none">-50 Coins</span> </button></div></div>');
+          $(".grid").append('<div class="item"><h3 class="room_name">' + room.name + '</h3> <div class="grid-container3"> <span id="sad_span">Sad</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width:' + room.badPercent + '%">      <h6 class="room_bad">' + room.bad + '</h6>         </div>      </div></div>  <div class="grid-container4"> <span id="happy_span">Happy</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width:' + room.goodPercent + '%">      <h6 class="room_good">' + room.good + '</h6> </div></div> </div><div class="grid-container2"><button type="button" id="good_button" class="btn btn-default" onclick="goodPlayer(this)">Happy</button><button type="button" id="bad_button" class="btn btn-default" onclick="badPlayer(this)">Sad</button></div><div class="grid-container1"><button type="button" id="ghost_button" class="btn btn-primary" onclick="becomeGhost(this)" disabled="true">Emoji <span class="tooltiptext"  style="display:none">-100 Coins</span></button><button type="button" id="extrashots_button" class="btn btn-success" onclick="extraShoots(this)" disabled="true">Extra Shots <span class="tooltiptext2"  style="display:none">-50 Coins</span> </button></div></div>');
         }
       }
       else if (data.type == 1 && room.name <= maxSystemRoomsNumber) {
-        $(".grid").append('<div class="item"><h3 class="room_name">' + room.name + '</h3> <div class="grid-container3"> <span id="sad_span">Sad</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width:'+ room.badPercent+'%">      <h6 class="room_bad">' + room.bad + '</h6>         </div>      </div></div>  <div class="grid-container4"> <span id="happy_span">Happy</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width:'+ room.goodPercent+'%">     <h6 class="room_good">' + room.good + '</h6> </div></div> </div><div class="grid-container2"><button type="button" id="good_button" class="btn btn-default" onclick="goodPlayer(this)">Happy</button><button type="button" id="bad_button" class="btn btn-default" onclick="badPlayer(this)">Sad</button></div><div class="grid-container1"><button type="button" id="ghost_button" disabled="true" class="btn btn-primary" onclick="becomeGhost(this)">Emoji <span class="tooltiptext"  style="display:none">-100 Coins</span> </button><button type="button" id="extrashots_button" disabled="true" class="btn btn-success" onclick="extraShoots(this)">Extra Shots <span class="tooltiptext2"  style="display:none">-50 Coins</span> </button></div></div>');
+        $(".grid").append('<div class="item"><h3 class="room_name">' + room.name + '</h3> <div class="grid-container3"> <span id="sad_span">Sad</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width:' + room.badPercent + '%">      <h6 class="room_bad">' + room.bad + '</h6>         </div>      </div></div>  <div class="grid-container4"> <span id="happy_span">Happy</span><div class="progress"> <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width:' + room.goodPercent + '%">     <h6 class="room_good">' + room.good + '</h6> </div></div> </div><div class="grid-container2"><button type="button" id="good_button" class="btn btn-default" onclick="goodPlayer(this)">Happy</button><button type="button" id="bad_button" class="btn btn-default" onclick="badPlayer(this)">Sad</button></div><div class="grid-container1"><button type="button" id="ghost_button" disabled="true" class="btn btn-primary" onclick="becomeGhost(this)">Emoji <span class="tooltiptext"  style="display:none">-100 Coins</span> </button><button type="button" id="extrashots_button" disabled="true" class="btn btn-success" onclick="extraShoots(this)">Extra Shots <span class="tooltiptext2"  style="display:none">-50 Coins</span> </button></div></div>');
       }
       /*if(data.type==1){
         $("#ghost_button").attr("disabled", true); $("#extrashots_button").attr("disabled", true);
@@ -136,6 +153,18 @@ function viewRooms() {
        */
     }
   });
+}
+function sendMessage() {
+  var message = document.getElementById('message');
+  // Emit events
+  if (message.value != "") {
+    socket.emit('chat', {
+      message: message.value,
+      handle: playerName
+    });
+    message.value = "";
+  }
+
 }
 function prepare(data) {
   createCanvas(windowWidth, windowHeight);
@@ -163,12 +192,36 @@ function prepare(data) {
     // set the function to handle the server comming data
     socket.on('newData', play);
     socket.on('endGame', endGame);
+
+    // Query DOM
+    var output = document.getElementById('output'),
+      feedback = document.getElementById('feedback');
+
+    if (playerName.length == 0) {
+      playerName = socket.id;
+    }
+
+
+    message.addEventListener('keypress', function () {
+      socket.emit('typing', playerName);
+    })
+
+    // Listen for events
+    socket.on('chat', function (data) {
+      feedback.innerHTML = '';
+      output.innerHTML += '<p><strong>' + data.handle + ': </strong>' + data.message + '</p>';
+    });
+
+    socket.on('typing', function (data) {
+      feedback.innerHTML = '<p><em>' + data + ' is typing a message...</em></p>';
+    });
   });
   $(".world").remove();
   fill(0, 102, 153);
   textAlign(CENTER, CENTER);
   textSize(32);
   text('Waiting the room to complete', winWidth / 2, winHeight / 2);
+  document.getElementById('slackers-chat').style.display = 'block';
 }
 function endGame() {
   alive = 0;
@@ -203,13 +256,13 @@ function play(data) {
     if (players[i].socketId.localeCompare(socket.id) == 0) { idx = i; break; }
   }
   noStroke();
-  background(0);
+  
   myPos = getPos(players[idx].playerCurX, players[idx].playerCurY);
   var mapPos = {
     x: players[idx].playerCurX,
     y: players[idx].playerCurY
   };
-
+  background(mapPos.x * 255.0 / mapWidth , 0 , mapPos.y * 255.0 / mapHeight);
   if (players[idx].health <= 0) // game over for me
   {
     fill(0, 102, 153);
@@ -247,7 +300,7 @@ function drawPlayer(player, me, mPos) {
     fill(100, 0, 0);
     curX = drawX, curY = drawY;
     ellipse(curX, curY, 2 * radBig, 2 * radBig);
-    if(player.special == 1) image(specialImg, curX - radMid, curY - radMid, 2 * radMid, 2 * radMid);
+    if (player.special == 1) image(specialImg, curX - radMid, curY - radMid, 2 * radMid, 2 * radMid);
     else if (player.type == 0) image(goodImg, curX - radMid, curY - radMid, 2 * radMid, 2 * radMid);
     else image(badImg, curX - radMid, curY - radMid, 2 * radMid, 2 * radMid);
     if (me == 1) {
@@ -255,7 +308,7 @@ function drawPlayer(player, me, mPos) {
       // this is shown for the owner
       x = curX + Math.cos(angle * Math.PI / 180) * distToOrbit;
       y = curY + Math.sin(angle * Math.PI / 180) * distToOrbit;
-      angle += 0.4;
+      angle += 0.8;
       if (angle == 360) angle = 0;
       fill(100, 100, 0);
       ellipse(x, y, radSmall, radSmall);
